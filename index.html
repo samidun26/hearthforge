@@ -1,0 +1,1474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Hearthforge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* Layout: HUD strip, then the living pixel village, then a board of pixel panels (12 columns on desktop, one tabbed panel on phone) */
+:root{
+  --night:#12131f; --ink:#1a1c2c; --edge:#090a12; --panel:#22263d; --well:#171929;
+  --stone:#333c57; --slate:#566c86; --fog:#94b0c2; --white:#f4f4f4;
+  --gold:#ffcd75; --ember:#ef7d57; --red:#b13e53; --plum:#5d275d; --lime:#a7f070; --green:#38b764; --sky:#41a6f6; --cyan:#73eff7;
+  --f-display:"Press Start 2P", ui-monospace, Menlo, monospace;
+  --f-body:"Pixelify Sans", ui-rounded, system-ui, sans-serif;
+  --f-num:"VT323", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+html{background:var(--night)}
+body{background:var(--night);color:var(--white);font:17px/1.4 var(--f-body);-webkit-font-smoothing:none;font-feature-settings:"liga" 0,"clig" 0}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img[data-icon],.pix{image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:middle}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
+
+.app{max-width:1260px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+.px{box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge),inset 0 3px 0 0 rgba(255,255,255,.05),inset 0 -3px 0 0 rgba(0,0,0,.22)}
+
+/* HUD */
+.hud{background:var(--panel);display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;padding:12px 16px}
+.who{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0}
+.portrait{background:var(--well);padding:6px;box-shadow:inset 0 0 0 2px var(--stone)}
+.who-text{flex:1;min-width:0}
+.name{font:11px/1.2 var(--f-display);color:var(--gold);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.name .lv{color:var(--lime)}
+.htitle{font-size:15px;color:var(--fog);margin-top:2px}
+.bar{height:12px;background:var(--well);box-shadow:inset 0 0 0 2px var(--edge);position:relative;margin-top:6px}
+.bar i{position:absolute;inset:2px auto 2px 2px;width:calc((100% - 4px) * var(--p,0));background:var(--lime);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.bar::after{content:"";position:absolute;inset:2px;background:repeating-linear-gradient(90deg,transparent 0 10px,var(--edge) 10px 12px)}
+.xptext{font:16px/1 var(--f-num);color:var(--fog);margin-top:4px;font-variant-numeric:tabular-nums}
+.stats{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center}
+.stat{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0}
+.stat b{font:26px/1 var(--f-num);color:var(--white);font-variant-numeric:tabular-nums}
+.stat span{font-size:14px;color:var(--fog)}
+.hearts{display:flex;gap:3px}
+.tchip{cursor:pointer;background:var(--well);padding:6px 10px;box-shadow:inset 0 0 0 2px var(--gold);gap:8px}
+.tchip em{font:9px var(--f-display);font-style:normal;color:var(--gold)}
+.tchip b{font-size:24px;color:var(--gold)}
+.tchip[data-m="rest"]{box-shadow:inset 0 0 0 2px var(--cyan)} .tchip[data-m="rest"] em,.tchip[data-m="rest"] b{color:var(--cyan)}
+.sys{display:flex;align-items:center;gap:10px;margin-left:auto}
+.clock{text-align:right;margin-right:4px}
+.clock b{display:block;font:28px/1 var(--f-num);font-variant-numeric:tabular-nums}
+.clock span{font:8px var(--f-display);color:var(--fog);letter-spacing:.06em;text-transform:uppercase}
+.tbtn{font:8px/1 var(--f-display);letter-spacing:.04em;background:var(--well);color:var(--fog);border:0;padding:10px 9px;min-height:36px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--stone)}
+.tbtn[aria-pressed="true"]{color:var(--ink);background:var(--lime);box-shadow:inset 0 0 0 2px var(--edge),inset -3px -3px 0 rgba(0,0,0,.2)}
+
+/* Intro */
+.intro{background:var(--plum);padding:14px 16px;display:flex;gap:12px 22px;flex-wrap:wrap;align-items:center}
+.intro b{font:10px/1.6 var(--f-display);color:var(--gold)}
+.intro ul{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0;padding:0;list-style:none;flex:1 1 400px;font-size:16px}
+.intro li em{font-style:normal;color:var(--gold)}
+
+/* Scene */
+.scene{position:relative;overflow:hidden;background:var(--ink)}
+#scene{display:block;image-rendering:pixelated;image-rendering:crisp-edges;cursor:pointer;max-width:none}
+.scene-tag{position:absolute;left:8px;top:8px;font:8px/1.5 var(--f-display);letter-spacing:.05em;color:var(--white);background:rgba(18,19,31,.72);padding:6px 8px;pointer-events:none;text-transform:uppercase}
+#bubble{position:absolute;transform:translate(-50%,-100%);background:var(--white);color:var(--ink);font:15px/1.25 var(--f-body);font-weight:500;padding:6px 10px;width:max-content;max-width:min(260px,72%);text-align:center;pointer-events:none;box-shadow:0 -3px 0 var(--edge),0 3px 0 var(--edge),-3px 0 0 var(--edge),3px 0 0 var(--edge)}
+#bubble::after{content:"";position:absolute;left:calc(50% - 3px);bottom:-9px;width:6px;height:6px;background:var(--white);box-shadow:0 3px 0 var(--edge),-3px 0 0 var(--edge),3px 0 0 var(--edge)}
+#fx{position:absolute;inset:0;pointer-events:none}
+.fx{position:absolute;transform:translate(-50%,0);font:10px var(--f-display);color:var(--lime);text-shadow:2px 2px 0 var(--edge);white-space:nowrap;animation:rise 1.4s steps(14) forwards}
+.fx.gold{color:var(--gold)} .fx.ember{color:var(--ember)} .fx.cyan{color:var(--cyan)} .fx.big{font-size:14px;color:var(--gold)}
+@keyframes rise{0%{transform:translate(-50%,0);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-44px);opacity:0}}
+
+/* Board */
+.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:22px}
+.panel{background:var(--panel);padding:16px;min-width:0;display:flex;flex-direction:column;gap:14px;align-self:start}
+#p-quests{grid-column:span 5} #p-forge{grid-column:span 4} #p-camp{grid-column:span 3}
+#p-market{grid-column:span 7} #p-log{grid-column:span 5}
+.ph{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:2px dashed var(--stone)}
+.ph h2{font:11px/1.3 var(--f-display);color:var(--gold);margin:0;letter-spacing:.04em;flex:1;text-wrap:balance}
+.meta{font:18px/1 var(--f-num);color:var(--fog);display:flex;gap:6px;align-items:center}
+.lbl{font:8px/1.4 var(--f-display);color:var(--fog);letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.hint{font-size:15px;color:var(--fog);margin:0}
+
+.btn{font:9px/1.2 var(--f-display);letter-spacing:.03em;padding:12px 14px;min-height:40px;background:var(--ember);color:var(--ink);border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:inset -3px -3px 0 rgba(0,0,0,.28),inset 3px 3px 0 rgba(255,255,255,.28),0 0 0 2px var(--edge)}
+.btn:active:not(:disabled){transform:translateY(2px);box-shadow:inset 3px 3px 0 rgba(0,0,0,.28),0 0 0 2px var(--edge)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.ghost{background:var(--stone);color:var(--white)}
+.btn.gold{background:var(--gold)} .btn.lime{background:var(--lime)} .btn.cyan{background:var(--cyan)}
+.btn.plum{background:var(--plum);color:var(--white)} .btn.red{background:var(--red);color:var(--white)}
+.btn.wide{width:100%}
+.btn.big{font-size:11px;padding:16px 18px;flex:1}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.field{background:var(--well);color:var(--white);font:17px/1.2 var(--f-body);border:0;padding:11px 12px;min-height:44px;width:100%;box-shadow:inset 0 0 0 2px var(--stone);border-radius:0}
+.field:focus{outline:none;box-shadow:inset 0 0 0 2px var(--gold)}
+.field::placeholder{color:var(--slate)}
+select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--fog) 50%),linear-gradient(-45deg,transparent 50%,var(--fog) 50%);background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:32px}
+
+/* Quests */
+.q-form{display:grid;gap:10px}
+.q-row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.seg{display:flex;flex:1 1 220px;box-shadow:inset 0 0 0 2px var(--stone)}
+.seg label{flex:1;position:relative;display:flex}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;min-height:44px;cursor:pointer;font:8px var(--f-display);color:var(--fog)}
+.seg em{font:15px/1 var(--f-num);font-style:normal;color:var(--slate)}
+.seg input:checked+span{background:var(--stone);color:var(--white);box-shadow:inset 0 -3px 0 var(--sz)}
+.seg input:checked+span em{color:var(--sz)}
+.seg input:focus-visible+span{outline:2px dashed var(--gold);outline-offset:-4px}
+.seg label:nth-child(1){--sz:var(--cyan)} .seg label:nth-child(2){--sz:var(--gold)} .seg label:nth-child(3){--sz:var(--red)}
+.oracle-note{margin:0;font-size:15px;color:var(--cyan);display:flex;gap:8px;align-items:center}
+.oracle-note::before{content:"";width:8px;height:8px;background:var(--cyan);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.qlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.q{display:flex;align-items:center;gap:10px;background:var(--well);padding:8px 8px 8px 10px;box-shadow:inset 3px 0 0 var(--sz,var(--cyan))}
+.q[data-size="m"]{--sz:var(--gold)} .q[data-size="l"]{--sz:var(--red)}
+.qt{flex:1;min-width:0;overflow-wrap:anywhere}
+.qt small{display:block;font-size:13px;color:var(--slate)}
+.size{font:8px var(--f-display);color:var(--sz,var(--cyan));padding:4px 0;min-width:30px;text-align:center}
+.chk{width:26px;height:26px;flex:none;background:var(--ink);border:0;cursor:pointer;position:relative;box-shadow:inset 0 0 0 2px var(--slate)}
+.chk:hover{box-shadow:inset 0 0 0 2px var(--lime)}
+.chk.on{background:var(--green);box-shadow:inset 0 0 0 2px var(--edge)}
+.chk.on::after{content:"";position:absolute;left:5px;top:5px;width:3px;height:3px;box-shadow:0 6px var(--white),3px 9px var(--white),6px 12px var(--white),9px 9px var(--white),12px 6px var(--white),15px 3px var(--white)}
+.mini{background:none;border:0;color:var(--slate);cursor:pointer;min-width:30px;min-height:30px;font:12px var(--f-display);padding:0}
+.mini:hover{color:var(--white)} .mini.split{color:var(--cyan)}
+.done-list .q{opacity:.6} .done-list .qt span{text-decoration:line-through;text-decoration-thickness:2px}
+details summary{cursor:pointer;font:8px/1.4 var(--f-display);color:var(--fog);letter-spacing:.08em;text-transform:uppercase;padding:6px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+ "} details[open] summary::before{content:"- "}
+details[open] summary{margin-bottom:8px}
+.empty{background:var(--well);padding:16px;color:var(--fog);font-size:15px;text-align:center}
+.calbar{display:flex;align-items:center;gap:10px;background:var(--well);padding:8px 8px 8px 12px;box-shadow:inset 0 0 0 2px var(--stone)}
+.calbar span{flex:1;min-width:0;font-size:15px;color:var(--fog)}
+.calbar .btn{padding:8px 10px;min-height:36px}
+.q[data-size="c"]{--sz:var(--sky)}
+.live{font:7px/1 var(--f-display);color:var(--white);background:var(--red);padding:2px 4px;animation:blink 1.2s steps(2) infinite}
+
+/* Forge */
+.forge-face{background:var(--well);padding:18px 14px 14px;text-align:center;box-shadow:inset 0 0 0 2px var(--edge)}
+.ftime{font:96px/0.85 var(--f-num);font-variant-numeric:tabular-nums;color:var(--white);letter-spacing:.02em}
+.forge-face[data-m="focus"] .ftime{color:var(--gold);text-shadow:0 0 18px rgba(239,125,87,.45),3px 3px 0 var(--plum)}
+.forge-face[data-m="rest"] .ftime{color:var(--cyan);text-shadow:3px 3px 0 var(--stone)}
+.forge-face[data-paused] .ftime{animation:blink 1.2s steps(2) infinite}
+.segs{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;margin:14px 0 10px}
+.segs i{height:10px;background:var(--stone)}
+.segs i.on{background:var(--ember)}
+.forge-face[data-m="rest"] .segs i.on{background:var(--cyan)}
+.fsub{font-size:15px;color:var(--fog);min-height:21px;overflow-wrap:anywhere}
+.chip{font:8px var(--f-display);padding:6px 8px;background:var(--stone);color:var(--fog)}
+.chip[data-m="focus"]{background:var(--ember);color:var(--ink)} .chip[data-m="rest"]{background:var(--cyan);color:var(--ink)} .chip[data-m="paused"]{background:var(--gold);color:var(--ink)}
+.chips{display:flex;gap:8px}
+.chips button{flex:1;font:22px/1 var(--f-num);background:var(--well);border:0;color:var(--fog);min-height:40px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--stone)}
+.chips button[aria-pressed="true"]{color:var(--ink);background:var(--gold);box-shadow:inset 0 0 0 2px var(--edge)}
+#f-rest-chips button[aria-pressed="true"]{background:var(--cyan)}
+.setup{display:grid;gap:8px}
+.donecard{background:var(--plum);padding:14px;display:grid;gap:10px}
+.donecard b{font:10px/1.5 var(--f-display);color:var(--gold)}
+.donecard p{margin:0;font-size:16px}
+.fstats{font:18px/1.2 var(--f-num);color:var(--fog);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.keys{font-size:13px;color:var(--slate);margin:0}
+.keys kbd{font:8px var(--f-display);color:var(--fog);background:var(--well);padding:3px 5px;box-shadow:inset 0 0 0 1px var(--stone)}
+
+/* Camp */
+.vigor,.potions{display:grid;gap:8px}
+.hearts.big img{width:28px;height:24px}
+.bottles{display:flex;gap:6px;flex-wrap:wrap;background:var(--well);border:0;padding:10px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--stone);width:100%;justify-content:center}
+.bottles:hover{box-shadow:inset 0 0 0 2px var(--cyan)}
+.bottles.thirsty{box-shadow:inset 0 0 0 2px var(--cyan);animation:nudge 1.6s steps(4) infinite}
+@keyframes nudge{0%,100%{transform:none}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.dlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.d{display:flex;align-items:center;gap:10px;background:var(--well);padding:8px}
+.d .qt{font-size:16px}
+.streak{display:flex;align-items:center;gap:4px;font:20px/1 var(--f-num);color:var(--ember)}
+.streak.cold{color:var(--slate)}
+.d-form{display:flex;gap:8px}
+
+/* Market */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+.card{background:var(--well);padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 0 0 2px var(--stone)}
+.card .pv{height:96px;display:flex;justify-content:center;align-items:flex-end;padding-top:6px;border-bottom:4px solid var(--green)}
+.card b{font:8px/1.5 var(--f-display);color:var(--white)}
+.card small{font-size:14px;line-height:1.3;color:var(--fog);flex:1}
+.card.built{box-shadow:inset 0 0 0 2px var(--green)}
+.card.built b{color:var(--lime)}
+.card .btn{width:100%}
+.card.next{box-shadow:inset 0 0 0 2px var(--gold)}
+
+/* Chronicle */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tile{background:var(--well);padding:10px 8px;text-align:center}
+.tile b{display:block;font:34px/1 var(--f-num);color:var(--gold);font-variant-numeric:tabular-nums}
+.tile span{font:7px/1.4 var(--f-display);color:var(--fog);letter-spacing:.06em;text-transform:uppercase}
+.chart{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:150px;background:var(--well);padding:10px 10px 8px;background-image:repeating-linear-gradient(0deg,transparent 0 23px,rgba(148,176,194,.08) 23px 24px)}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+.col i{width:100%;max-width:34px;background:var(--sky);box-shadow:inset -4px 0 0 rgba(0,0,0,.22),inset 0 4px 0 rgba(255,255,255,.2)}
+.col.today i{background:var(--gold)}
+.col .v{font:16px/1 var(--f-num);color:var(--fog)}
+.col .d{font:8px var(--f-display);color:var(--slate)}
+.col.today .d{color:var(--gold)}
+.ach{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.badge{display:flex;gap:10px;align-items:center;background:var(--well);padding:8px}
+.badge b{display:block;font:7px/1.5 var(--f-display);color:var(--gold)}
+.badge small{display:block;font-size:13px;line-height:1.2;color:var(--fog)}
+.badge.locked b{color:var(--slate)} .badge.locked small{color:var(--slate)}
+.bard blockquote{margin:0;background:var(--well);padding:14px 16px;font-size:17px;line-height:1.5;white-space:pre-line;color:var(--white);box-shadow:inset 3px 0 0 var(--plum)}
+.settings{background:var(--well);padding:4px 12px 12px}
+.settings label{display:grid;gap:6px;font-size:15px;color:var(--fog);margin-bottom:10px}
+
+/* Toasts */
+#toasts{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:20;max-width:min(360px,calc(100vw - 32px));pointer-events:none}
+.toast{background:var(--ink);color:var(--white);padding:12px 14px;font-size:16px;box-shadow:0 -3px 0 var(--edge),0 3px 0 var(--edge),-3px 0 0 var(--edge),3px 0 0 var(--edge),inset 4px 0 0 var(--ember);animation:pop .2s steps(3)}
+.toast.ach{box-shadow:0 -3px 0 var(--edge),0 3px 0 var(--edge),-3px 0 0 var(--edge),3px 0 0 var(--edge),inset 4px 0 0 var(--gold)}
+.toast.out{opacity:0;transition:opacity .4s steps(4)}
+@keyframes pop{from{transform:translateY(8px)}to{transform:none}}
+
+/* Phone tabs */
+.tabs{display:none}
+@media (max-width:1099px){
+  #p-quests{grid-column:span 7} #p-forge{grid-column:span 5} #p-camp{grid-column:span 5} #p-market{grid-column:span 7} #p-log{grid-column:span 12}
+}
+@media (max-width:719px){
+  .app{gap:14px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .board{display:block}
+  .panel{display:none} .panel.on{display:flex}
+  .hud{gap:10px 14px;padding:10px 12px}
+  .sys{margin-left:0;flex:1 1 100%;justify-content:space-between}
+  .clock{text-align:left}
+  .ftime{font-size:84px}
+  .tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--edge);padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));gap:4px}
+  .tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;padding:8px 0;min-height:52px;font:7px var(--f-display);color:var(--slate);cursor:pointer;letter-spacing:.04em}
+  .tabs button[aria-current="page"]{color:var(--gold);background:var(--panel)}
+  #toasts{bottom:calc(84px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));max-width:none}
+  .tiles b{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  .fx{animation:none;opacity:0} .bottles.thirsty,.forge-face[data-paused] .ftime,.oracle-note::before{animation:none}
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="hud px">
+    <div class="who">
+      <div class="portrait"><img data-icon="hero_a" data-scale="3" alt="Your hero"></div>
+      <div class="who-text">
+        <div class="name"><span id="h-name">Pip</span><span class="lv" id="h-lv">LV 1</span></div>
+        <div class="htitle" id="h-title">Peasant</div>
+        <div class="bar" id="h-xpbar" role="progressbar" aria-label="Experience to next level" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+        <div class="xptext" id="h-xp">0 / 50 XP to level 2</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat" title="Gold"><img data-icon="coin" data-scale="3" alt=""><b id="h-gold">0</b><span>gold</span></div>
+      <div class="stat" title="Days in a row with progress"><img data-icon="flame" data-scale="3" alt=""><b id="h-streak">0</b><span>day streak</span></div>
+      <div class="stat hearts" id="h-hearts" title="Vigor: refills when you rest, drink, or stretch"></div>
+      <button class="stat tchip" id="h-timer" hidden><em id="h-tmode">FOCUS</em><b id="h-tleft">25:00</b></button>
+    </div>
+    <div class="sys">
+      <div class="clock"><b id="h-clock">--:--</b><span id="h-phase">Today</span></div>
+      <div class="row">
+        <button class="tbtn" id="b-sound" aria-pressed="true">SFX</button>
+        <button class="tbtn" id="b-music" aria-pressed="false">MUSIC</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="intro px" id="intro" hidden>
+    <b>Welcome to<br>Hearthforge</b>
+    <ul>
+      <li><em>Quests</em> are your tasks.</li>
+      <li>The <em>Forge</em> is a focus timer.</li>
+      <li><em>Potions</em> are glasses of water.</li>
+      <li>Spend <em>gold</em> to grow your village.</li>
+    </ul>
+    <button class="btn gold" id="intro-ok">Begin</button>
+  </section>
+
+  <section class="scene px" id="scene-wrap" aria-label="Your village">
+    <canvas id="scene" role="img" aria-label="A pixel village that follows the real time of day. Your hero works the forge while you focus." title="Click your hero to chat"></canvas>
+    <div class="scene-tag" id="scene-tag"></div>
+    <div id="bubble" hidden></div>
+    <div id="fx" aria-hidden="true"></div>
+  </section>
+
+  <main class="board">
+    <section class="panel px on" id="p-quests" data-tab="quests">
+      <div class="ph"><img data-icon="scroll" alt=""><h2>Quest Board</h2><span class="meta" id="q-meta"></span></div>
+      <form class="q-form" id="q-form" autocomplete="off">
+        <input class="field" id="q-text" maxlength="140" placeholder="New quest, e.g. Draft the launch email" aria-label="New quest">
+        <div class="q-row">
+          <div class="seg" role="radiogroup" aria-label="Quest size">
+            <label><input type="radio" name="q-size" value="s" checked><span>SMALL<em>10 xp</em></span></label>
+            <label><input type="radio" name="q-size" value="m"><span>MEDIUM<em>25 xp</em></span></label>
+            <label><input type="radio" name="q-size" value="l"><span>BOSS<em>60 xp</em></span></label>
+          </div>
+          <button class="btn" type="submit">Post</button>
+          <button class="btn plum" type="button" id="q-oracle" hidden title="Ask the Oracle to split a big goal into quests">Oracle</button>
+        </div>
+        <p class="oracle-note" id="oracle-note" hidden></p>
+      </form>
+      <div class="calbar" id="cal-bar" hidden><img data-icon="cal" alt=""><span id="cal-status" aria-live="polite">Notion Calendar</span><button class="btn ghost" type="button" id="cal-btn">Connect</button></div>
+      <ul class="qlist" id="q-list"></ul>
+      <details id="q-done-wrap" hidden><summary>Completed today (<span id="q-done-n">0</span>)</summary><ul class="qlist done-list" id="q-done"></ul></details>
+    </section>
+
+    <section class="panel px" id="p-forge" data-tab="forge">
+      <div class="ph"><img data-icon="hammer" alt=""><h2>The Forge</h2><span class="chip" id="f-mode">IDLE</span></div>
+      <div class="forge-face" id="f-face">
+        <div class="ftime" id="f-time">25:00</div>
+        <div class="segs" id="f-segs"></div>
+        <div class="fsub" id="f-sub"></div>
+      </div>
+      <div class="setup" id="f-setup">
+        <label class="lbl" for="f-quest">Working on</label>
+        <select class="field" id="f-quest"></select>
+        <div class="lbl">Focus minutes</div>
+        <div class="chips" id="f-focus-chips"><button data-v="15">15</button><button data-v="25">25</button><button data-v="50">50</button></div>
+        <div class="lbl">Rest minutes</div>
+        <div class="chips" id="f-rest-chips"><button data-v="5">5</button><button data-v="10">10</button><button data-v="15">15</button></div>
+        <div class="row" style="margin-top:6px"><button class="btn big" data-act="focus">Start focus</button><button class="btn cyan" data-act="rest">Rest</button></div>
+      </div>
+      <div class="row" id="f-run" hidden><button class="btn ghost big" data-act="pause" id="f-pause">Pause</button><button class="btn red" data-act="retreat" id="f-retreat">Retreat</button></div>
+      <div class="donecard" id="f-done" hidden></div>
+      <div class="fstats"><span id="f-today">0 min forged today</span><span id="f-sessions">0 sessions</span></div>
+      <p class="keys">Keys: <kbd>F</kbd> forge · <kbd>N</kbd> new quest · <kbd>W</kbd> potion</p>
+    </section>
+
+    <section class="panel px" id="p-camp" data-tab="camp">
+      <div class="ph"><img data-icon="fire" alt=""><h2>Camp</h2></div>
+      <div class="vigor">
+        <div class="lbl">Vigor</div>
+        <div class="hearts big" id="c-hearts"></div>
+        <p class="hint" id="c-vigor"></p>
+      </div>
+      <div class="potions">
+        <div class="lbl"><span>Potions</span><span id="c-pot-n">0 / 8</span></div>
+        <button class="bottles" id="c-bottles" aria-label="Drink a potion (log a glass of water)"></button>
+        <p class="hint" id="c-pot"></p>
+      </div>
+      <button class="btn ghost wide" id="c-stretch">Stretch break</button>
+      <div class="lbl">Dailies</div>
+      <ul class="dlist" id="d-list"></ul>
+      <form class="d-form" id="d-form" autocomplete="off"><input class="field" id="d-text" maxlength="80" placeholder="New daily habit" aria-label="New daily habit"><button class="btn ghost" type="submit">Add</button></form>
+    </section>
+
+    <section class="panel px" id="p-market" data-tab="market">
+      <div class="ph"><img data-icon="bag" alt=""><h2>Market</h2><span class="meta"><img data-icon="coin" alt=""><b id="m-gold">0</b></span></div>
+      <p class="hint">Spend gold to grow your village. Some buildings grant perks.</p>
+      <div class="mgrid" id="m-grid"></div>
+    </section>
+
+    <section class="panel px" id="p-log" data-tab="log">
+      <div class="ph"><img data-icon="book" alt=""><h2>Chronicle</h2><span class="meta" id="l-date"></span></div>
+      <div class="tiles" id="l-tiles"></div>
+      <div class="lbl"><span>Last 7 days</span><span>forge minutes</span></div>
+      <div class="chart" id="l-chart"></div>
+      <div class="bard" id="l-bard" hidden>
+        <div class="lbl" style="margin-bottom:8px">The bard's ballad of today</div>
+        <blockquote id="l-ballad">The bard has not sung of today yet.</blockquote>
+        <div class="row" style="margin-top:10px"><button class="btn plum" id="l-bard-btn">Ask the bard</button></div>
+      </div>
+      <div class="lbl"><span>Achievements</span><span id="l-ach-n"></span></div>
+      <div class="ach" id="l-ach"></div>
+      <details class="settings">
+        <summary>Settings</summary>
+        <label>Hero name <input class="field" id="s-name" maxlength="16"></label>
+        <label>Potion reminder
+          <select class="field" id="s-pot"><option value="0">Off</option><option value="30">Every 30 minutes</option><option value="45">Every 45 minutes</option><option value="60">Every hour</option><option value="90">Every 90 minutes</option></select>
+        </label>
+        <p class="hint" id="s-sync" style="margin-bottom:10px">Saved in this browser.</p>
+        <button class="btn red" id="s-reset">Reset save</button>
+      </details>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <button data-go="quests" aria-current="page"><img data-icon="scroll" alt="">QUESTS</button>
+  <button data-go="forge"><img data-icon="hammer" alt="">FORGE</button>
+  <button data-go="camp"><img data-icon="fire" alt="">CAMP</button>
+  <button data-go="market"><img data-icon="bag" alt="">MARKET</button>
+  <button data-go="log"><img data-icon="book" alt="">LOG</button>
+</nav>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+const uid = () => Math.random().toString(36).slice(2, 9);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const MIN = 60000;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const hash = s => [...s].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0;
+
+/* ---------- Sprites (Sweetie-16 palette + skin and woods) ---------- */
+const PAL = { 0: '#1a1c2c', 1: '#5d275d', 2: '#b13e53', 3: '#ef7d57', 4: '#ffcd75', 5: '#a7f070', 6: '#38b764', 7: '#257179', 8: '#29366f', 9: '#3b5dc9', a: '#41a6f6', b: '#73eff7', c: '#f4f4f4', d: '#94b0c2', e: '#566c86', f: '#333c57', g: '#f5b88a', h: '#8a4b38', i: '#4e2a2a', k: '#d6995e' };
+const HERO_TOP = ['..000000..', '.02222220.', '0222222220', '02gggggg20', '0ggg0gg0g0', '0gggggggg0', '.00gggg00.', '.0999a990.', '0g999a99g0', '0g944449g0', '.09999990.'];
+const ROWS = {
+  hero_a: [...HERO_TOP, '.0hh00hh0.', '.0hh00hh0.', '.000..000.'],
+  hero_b: [...HERO_TOP, '.0hh0hh0..', '0hh0..0hh0', '000....000'],
+  hero_sit: [...HERO_TOP, '.0hhhhhhh0', '.000000000'],
+  hero_up: ['..000000..', '.02222220.', '0222222220', '02gggggg20', '0ggg0gg0g0', '0gggggggg0', 'g00gggg00g', 'g0999a990g', '.0999a990.', '.09444490.', '.09999990.', '.0hh00hh0.', '.0hh00hh0.', '.000..000.'],
+  tent: ['.......00.......', '......0330......', '.....033330.....', '....03323330....', '...0333223330...', '..033332233330..', '.03333322333330.', '0333333003333330', '0333330000333330', '0333300000033330', '0000000000000000'],
+  well: ['...000000...', '..0hhhhhh0..', '.0hhhhhhhh0.', '0iiiiiiiiii0', '..0h....h0..', '..0h.dd.h0..', '..0h.ee.h0..', '.0000000000.', '0deedeedeed0', '0eddeeddeed0', '0deedeedeed0', '000000000000'],
+  cottage: ['.........00.........', '........0220........', '.......022220.......', '......02222220......', '.....0222222220.....', '....022222222220....', '...02222222222220...', '..0222222222222220..', '.022222222222222220.', '00000000000000000000',
+    '.0kkkkkkkkkkkkkkkk0.', '.0k0000k0000k0000k0.', '.0k0bb0k0hh0k0bb0k0.', '.0k0bb0k0hh0k0bb0k0.', '.0k0000k0hh0k0000k0.', '.0kkkkkk0h40kkkkkk0.', '.0kkkkkk0hh0kkkkkk0.', '00000000000000000000'],
+  stall: ['0000000000000000', '0c2c2c2c2c2c2c20', '0c2c2c2c2c2c2c20', '.02c2c2c2c2c2c0.', '..h..........h..', '..h..........h..', '..h.4.6.3.a.4h..', '0hhhhhhhhhhhhhh0', '0iiiiiiiiiiiiii0', '..i..........i..', '..i..........i..', '.000........000.'],
+  cat_a: ['3....3.3', '3....333', '.3...303', '.333333.', '.333333.', '.3.3.3.3'],
+  cat_b: ['3....3.3', '3....333', '.3...303', '.333333.', '.333333.', '3.3.3.3.'],
+  coin: ['..000..', '.04c40.', '04c4440', '0444430', '0444330', '.04330.', '..000..'],
+  heart: ['.00.00.', '0c20220', '0222220', '.02220.', '..020..', '...0...'],
+  potion: ['..000..', '..0h0..', '.0ddd0.', '0dcddd0', '0caaaa0', '0aaaaa0', '0aaa9a0', '.0aa90.', '..000..'],
+  flame: ['...0..', '..030.', '.0330.', '033430', '034440', '03c430', '.0440.', '..00..'],
+  scroll: ['.0000000.', '0hkkkkkh0', '.0ccccc0.', '.0c000c0.', '.0ccccc0.', '.0c00cc0.', '.0ccccc0.', '0hkkkkkh0', '.0000000.'],
+  hammer: ['.0000000.', '0cddddde0', '0deeeeee0', '.0000000.', '...0h0...', '...0h0...', '...0h0...', '...0i0...', '...000...'],
+  fire: ['....0....', '...030...', '..0330...', '..03430..', '.0344430.', '.0344430.', '0hh000hh0', '.0hhhhh0.', '..00000..'],
+  bag: ['...000...', '..0hhh0..', '...040...', '..0kkk0..', '.0kkkkk0.', '0kk4kkkk0', '0kkkkkhk0', '0hkkkkhh0', '.0000000.'],
+  book: ['0000000..', '0111110c.', '0144410c.', '0111110c.', '0141410c.', '0111110c.', '0111110c.', '00000000.', '.cccccc..'],
+  medal: ['.22.99.', '..2.9..', '..000..', '.04440.', '04c4440', '0444430', '0444330', '.04330.', '..000..'],
+  cal: ['.0.....0.', '022222220', '022222220', '0ccccccc0', '0c0c0c0c0', '0ccccccc0', '0c0c0c2c0', '0ccccccc0', '000000000'],
+};
+const SPR = {};
+function mk(name, rows, swap) {
+  const h = rows.length, w = rows[0].length, c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch === '.') return; x.fillStyle = PAL[swap?.[ch] ?? ch]; x.fillRect(i, j, 1, 1); }));
+  const f = document.createElement('canvas'); f.width = w; f.height = h;
+  const fx = f.getContext('2d'); fx.translate(w, 0); fx.scale(-1, 1); fx.drawImage(c, 0, 0);
+  SPR[name] = { c, f, w, h };
+}
+for (const [n, r] of Object.entries(ROWS)) mk(n, r);
+mk('heart0', ROWS.heart, { 2: 'f', c: 'e' });
+mk('potion0', ROWS.potion, { a: 'f', 9: 'f', c: 'e' });
+mk('cottage_n', ROWS.cottage, { b: '4' });
+mk('flame0', ROWS.flame, { 3: 'e', 4: 'd', c: 'd' });
+mk('medal0', ROWS.medal, { 4: 'e', 3: 'f', c: 'd', 2: 'f', 9: 'f' });
+const spr = (c, n, x, y, flip) => { const s = SPR[n]; c.drawImage(flip ? s.f : s.c, Math.round(x), Math.round(y)); };
+const ICON = {};
+const iconURL = n => ICON[n] ||= SPR[n].c.toDataURL();
+function iconHTML(n, k = 2) { const s = SPR[n]; return `<img class="pix" src="${iconURL(n)}" width="${s.w * k}" height="${s.h * k}" alt="">`; }
+function paintIcons(root = document) {
+  root.querySelectorAll('img[data-icon]').forEach(im => { const s = SPR[im.dataset.icon], k = +(im.dataset.scale || 2); im.src = iconURL(im.dataset.icon); im.width = s.w * k; im.height = s.h * k; });
+}
+
+/* ---------- State ---------- */
+const LS = 'hearthforge.v1';
+function fresh() {
+  const now = Date.now();
+  return {
+    v: 1, updatedAt: 0, today: dayKey(), name: 'Pip', xp: 0, gold: 15, built: [], ach: [], seenIntro: false,
+    quests: [
+      { id: uid(), t: 'Post your first real quest', size: 's', at: now },
+      { id: uid(), t: 'Forge one 25-minute focus session', size: 'm', at: now },
+      { id: uid(), t: 'Drink a potion (a glass of water)', size: 's', at: now },
+    ],
+    dailies: [
+      { id: uid(), t: "Plan today's quests", streak: 0, best: 0, last: '' },
+      { id: uid(), t: 'Step outside for fresh air', streak: 0, best: 0, last: '' },
+      { id: uid(), t: 'Read 10 pages', streak: 0, best: 0, last: '' },
+    ],
+    forge: { mode: 'idle', endsAt: 0, total: 25 * MIN, left: 0, paused: false, quest: '', done: null },
+    water: { n: 0, lastAt: now }, lastRestAt: now, stretchAt: 0, ballad: null, calSkip: { day: '', ids: [] },
+    log: {}, settings: { focus: 25, rest: 5, potionEvery: 60, sound: true, music: false },
+  };
+}
+function migrate(s) {
+  const f = fresh();
+  return { ...f, ...s, forge: { ...f.forge, ...s.forge }, water: { ...f.water, ...s.water }, settings: { ...f.settings, ...s.settings } };
+}
+function loadLocal() { try { const s = JSON.parse(localStorage.getItem(LS)); return s && s.v === 1 ? migrate(s) : null; } catch { return null; } }
+let S = loadLocal() || fresh();
+const persistLocal = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch { } };
+
+let remote = null, writing = false, dirty = false, flushT = 0, ready = false;
+function save() { S.updatedAt = Date.now(); persistLocal(); queueRemote(); }
+function queueRemote() { if (!remote) return; dirty = true; clearTimeout(flushT); flushT = setTimeout(flush, 1200); }
+async function flush() {
+  if (writing || !dirty || !remote) return;
+  writing = true; dirty = false;
+  try { await remote.set({ state: JSON.stringify(S), updatedAt: S.updatedAt }); }
+  catch (e) { if (e?.code !== 'unavailable') { remote = null; syncNote(); } else dirty = true; }
+  writing = false;
+  if (dirty) flushT = setTimeout(flush, 2000);
+}
+function commit() { save(); renderAll(); }
+
+const L = (k = dayKey()) => S.log[k] ||= { focus: 0, sessions: 0, quests: 0, xp: 0, potions: 0 };
+const has = id => S.built.includes(id);
+
+// New day: clear yesterday's finished quests and potions. Deterministic, so it is never synced on its own.
+function rollover() {
+  const t = dayKey();
+  if (S.today === t) return false;
+  S.today = t;
+  S.quests = S.quests.filter(q => !q.done && !q.cal);
+  S.water = { n: 0, lastAt: Date.now() };
+  S.lastRestAt = Date.now();
+  S.forge.done = null;
+  const cut = dayKey(daysAgo(120));
+  for (const k of Object.keys(S.log)) if (k < cut) delete S.log[k];
+  return true;
+}
+
+/* ---------- Progression ---------- */
+function level(xp = S.xp) { let l = 1, need = 50, x = xp; while (x >= need) { x -= need; l++; need = 50 + 30 * (l - 1); } return { l, into: x, need }; }
+const TITLES = [[1, 'Peasant'], [2, 'Apprentice'], [4, 'Squire'], [6, 'Knight'], [8, 'Ranger'], [10, 'Paladin'], [13, 'Champion'], [16, 'Warlord'], [20, 'Archmage'], [25, 'Legend']];
+const title = l => TITLES.filter(t => l >= t[0]).pop()[1];
+function streak() {
+  let n = 0, i = S.log[dayKey()]?.xp > 0 ? 0 : 1;
+  while (S.log[dayKey(daysAgo(i))]?.xp > 0) { n++; i++; }
+  return n;
+}
+const vigor = () => clamp(5 - Math.floor((Date.now() - S.lastRestAt) / (40 * MIN)), 1, 5);
+const restCredit = () => { S.lastRestAt = Math.min(Date.now(), S.lastRestAt + 20 * MIN); };
+
+const ACH = [
+  ['first_quest', 'First Blood', 'Complete a quest'], ['boss', 'Boss Slayer', 'Defeat a Boss quest'],
+  ['first_forge', 'Sparks Fly', 'Finish a forge session'], ['deep', 'Deep Work', 'Forge 100 minutes in a day'],
+  ['hydra', 'Hydrated', 'Drink 8 potions in a day'], ['builder', 'Homesteader', 'Build your first structure'],
+  ['castle', 'Lord of the Keep', 'Raise the Hearth Keep'], ['lvl5', 'Seasoned', 'Reach level 5'],
+  ['streak3', 'Kindled', 'Keep a 3-day streak'], ['streak7', 'Eternal Flame', 'Keep a 7-day streak'],
+  ['early', 'Early Bird', 'Finish a quest before 8:00'], ['owl', 'Night Owl', 'Finish a quest after 22:00'],
+  ['crit', 'Lucky Strike', 'Land a critical reward'], ['seer', 'Seer', 'Let the Oracle split a goal'],
+];
+function unlock(id) {
+  if (S.ach.includes(id)) return;
+  S.ach.push(id); S.gold += 20;
+  const a = ACH.find(a => a[0] === id);
+  setTimeout(() => { toast(`Achievement unlocked: ${a[1]}. +20 gold`, 'ach'); SFX.ach(); }, 900);
+}
+function checkAch() {
+  const d = L(), st = streak();
+  if (d.focus >= 100) unlock('deep');
+  if (d.potions >= 8) unlock('hydra');
+  if (S.built.length) unlock('builder');
+  if (has('castle')) unlock('castle');
+  if (level().l >= 5) unlock('lvl5');
+  if (st >= 3) unlock('streak3');
+  if (st >= 7) unlock('streak7');
+}
+function reward(xp, gold) {
+  const before = level().l, crit = Math.random() < (has('tower') ? .15 : .10);
+  if (crit) { xp *= 2; gold *= 2; unlock('crit'); }
+  S.xp += xp; S.gold += gold; L().xp += xp;
+  fxText(`+${xp} XP`, 'lime');
+  if (gold) setTimeout(() => fxText(`+${gold}g`, 'gold'), 200);
+  if (crit) setTimeout(() => fxText('CRIT!', 'ember'), 420);
+  burst('coin', 6 + Math.min(14, gold));
+  SFX.coin();
+  const after = level().l;
+  if (after > before) setTimeout(() => { SFX.level(); fxText(`LEVEL ${after}!`, 'big'); toast(`Level ${after}. You are now a ${title(after)}.`, 'ach'); hero.jump = 1; burst('spark', 24); }, 650);
+  checkAch();
+}
+
+/* ---------- Actions ---------- */
+const QS = { s: { xp: 10, g: 5, label: 'S' }, m: { xp: 25, g: 12, label: 'M' }, l: { xp: 60, g: 30, label: 'BOSS' } };
+// Meetings pay by length: half a point per minute, 8 to 60 XP.
+function questReward(q) {
+  if (!q.cal) return QS[q.size];
+  const xp = clamp(Math.round((q.end - q.start) / MIN / 2), 8, 60);
+  return { xp, g: Math.round(xp / 2) };
+}
+const hm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const liveMeet = (now = Date.now()) => S.quests.find(q => q.cal && !q.done && now >= q.start && now < q.end);
+function addQuest(t, size) { t = t.trim().slice(0, 140); if (!t) return false; S.quests.push({ id: uid(), t, size, at: Date.now() }); SFX.blip(); commit(); return true; }
+function toggleQuest(id) {
+  const q = S.quests.find(q => q.id === id); if (!q) return;
+  const z = questReward(q), d = L();
+  if (q.done) { q.done = 0; S.xp = Math.max(0, S.xp - z.xp); S.gold = Math.max(0, S.gold - z.g); d.quests = Math.max(0, d.quests - 1); d.xp = Math.max(0, d.xp - z.xp); SFX.blip(); return commit(); }
+  q.done = Date.now(); d.quests++;
+  unlock('first_quest'); if (q.size === 'l' && !q.cal) unlock('boss');
+  const h = new Date().getHours(); if (h < 8) unlock('early'); if (h >= 22) unlock('owl');
+  if (S.forge.quest === id) S.forge.quest = '';
+  hero.jump = 1;
+  reward(z.xp, z.g + (has('stall') ? 1 : 0));
+  if (q.cal) say(pick(['Meeting survived!', 'That meeting is in the books.', 'Meeting over. Back to the forge?']));
+  else if (q.size === 'l') say('The boss falls! Huzzah!');
+  commit();
+}
+function delQuest(id) {
+  const q = S.quests.find(q => q.id === id);
+  if (q?.cal) { const t = dayKey(); if (S.calSkip?.day !== t) S.calSkip = { day: t, ids: [] }; S.calSkip.ids.push(id); }
+  S.quests = S.quests.filter(q => q.id !== id); if (S.forge.quest === id) S.forge.quest = ''; commit();
+}
+
+function startForge(mode) {
+  const f = S.forge, min = mode === 'focus' ? S.settings.focus : S.settings.rest;
+  Object.assign(f, { mode, total: min * MIN, endsAt: Date.now() + min * MIN, paused: false, left: 0, done: null });
+  wake(true); SFX.start();
+  say(mode === 'focus' ? pick(['To the forge!', 'Strike while the iron is hot.', 'Heads down. I will guard the camp.']) : pick(['Rest by the fire.', 'Breathe. Look far away.', 'Stretch those legs.']));
+  commit();
+}
+function togglePause() { const f = S.forge; if (f.paused) { f.endsAt = Date.now() + f.left; f.paused = false; } else { f.left = Math.max(0, f.endsAt - Date.now()); f.paused = true; } SFX.blip(); commit(); }
+function retreat() { Object.assign(S.forge, { mode: 'idle', paused: false }); wake(false); SFX.err(); say('We live to forge another day.'); commit(); }
+const forgeLeft = () => { const f = S.forge; return f.mode === 'idle' ? 0 : f.paused ? f.left : Math.max(0, f.endsAt - Date.now()); };
+function checkForge() {
+  const f = S.forge;
+  if (f.mode === 'idle' || f.paused || Date.now() < f.endsAt) return;
+  const min = Math.round(f.total / MIN), mode = f.mode;
+  f.mode = 'idle'; wake(false);
+  if (mode === 'focus') {
+    const d = L(); d.focus += min; d.sessions++;
+    f.done = { kind: 'focus', min, quest: f.quest };
+    unlock('first_forge'); SFX.fanfare();
+    reward(Math.round(min * (has('windmill') ? 1.1 : 1)), Math.round(min / 2));
+    toast(`Forge session complete: ${min} minutes of focus.`);
+    say('Done! That steel is sharp.');
+  } else {
+    S.lastRestAt = Date.now(); f.done = { kind: 'rest', min };
+    SFX.chime(); reward(2, 1);
+    toast('Rest complete. Vigor restored.');
+    say('Refreshed. Ready when you are.');
+  }
+  burst('spark', 18);
+  commit();
+}
+let wl = null;
+async function wake(on) {
+  try {
+    if (on && !wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
+    else if (!on && wl) { await wl.release(); wl = null; }
+  } catch { wl = null; }
+}
+
+function drink() {
+  if (S.water.n >= 16) return;
+  S.water.n++; S.water.lastAt = Date.now(); L().potions++;
+  restCredit(); SFX.drink();
+  reward(2 + (has('well') ? 1 : 0), 1);
+  if (S.water.n === 8) say('Eight potions! Fully hydrated.');
+  commit();
+}
+function stretch() {
+  if (Date.now() - S.stretchAt < 20 * MIN) return;
+  S.stretchAt = Date.now(); restCredit(); hero.jump = 1;
+  reward(3, 1); say(pick(['Reach for the sky!', 'Roll those shoulders.', 'Ahh, much better.']));
+  commit();
+}
+function toggleDaily(id) {
+  const d = S.dailies.find(x => x.id === id); if (!d) return;
+  const t = dayKey(), y = dayKey(daysAgo(1));
+  if (d.last === t) { d.last = d.prev || ''; d.streak = Math.max(0, d.streak - 1); S.xp = Math.max(0, S.xp - 8); S.gold = Math.max(0, S.gold - 4); SFX.blip(); return commit(); }
+  d.prev = d.last; d.streak = d.last === y ? d.streak + 1 : 1; d.best = Math.max(d.best || 0, d.streak); d.last = t;
+  reward(8 + Math.min(d.streak, 10), 4);
+  if (d.streak > 1 && d.streak % 5 === 0) say(`${d.streak} days of "${d.t.slice(0, 24)}"! Legendary.`);
+  commit();
+}
+
+/* ---------- Village buildings ---------- */
+function disc(c, x, y, r) { for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy)); c.fillRect(x - w, y + dy, 2 * w + 1, 1); } }
+function stone(c, x, y, w, h) {
+  c.fillStyle = '#94b0c2'; c.fillRect(x, y, w, h);
+  c.fillStyle = '#566c86';
+  for (let j = 2; j < h; j += 3) { c.fillRect(x, y + j, w, 1); for (let i = (j / 3 | 0) % 2 ? 1 : 3; i < w; i += 5) c.fillRect(x + i, y + j - 2, 1, 2); }
+  c.fillStyle = '#1a1c2c'; c.fillRect(x - 1, y, 1, h); c.fillRect(x + w, y, 1, h); c.fillRect(x - 1, y + h, w + 2, 1);
+}
+function crenels(c, x, y, w) { for (let i = 0; i < w; i += 3) { c.fillStyle = '#1a1c2c'; c.fillRect(x + i - 1, y - 3, 4, 3); c.fillStyle = '#94b0c2'; c.fillRect(x + i, y - 2, 2, 2); } }
+function drawLamp(c, x, by, night) {
+  c.fillStyle = '#1a1c2c'; c.fillRect(x, by - 13, 1, 13); c.fillRect(x - 1, by - 1, 3, 1); c.fillRect(x - 2, by - 15, 5, 1);
+  c.fillStyle = night ? '#ffcd75' : '#94b0c2'; c.fillRect(x - 1, by - 14, 3, 2);
+  if (night) LIGHTS.push([x, by - 13, 12, '#ffcd75']);
+}
+function drawGarden(c, x, by, stage) {
+  for (let r = 0; r < 3; r++) {
+    const y = by - 8 + r * 3;
+    c.fillStyle = '#4e2a2a'; c.fillRect(x - 10, y, 20, 2); c.fillStyle = '#8a4b38'; c.fillRect(x - 10, y, 20, 1);
+    for (let i = 0; i < 6; i++) {
+      const px = x - 9 + i * 3 + (r % 2);
+      if (stage === 0) { c.fillStyle = '#d6995e'; c.fillRect(px, y, 1, 1); continue; }
+      c.fillStyle = '#38b764'; c.fillRect(px, y - 1, 1, 1);
+      if (stage >= 2) { c.fillStyle = '#a7f070'; c.fillRect(px - 1, y - 2, 3, 1); }
+      if (stage >= 3) { c.fillStyle = (i + r) % 2 ? '#ef7d57' : '#ffcd75'; c.fillRect(px, y - 3, 2, 2); }
+    }
+  }
+}
+const gardenStage = () => { const m = L().focus; return m >= 120 ? 3 : m >= 60 ? 2 : m >= 25 ? 1 : 0; };
+function drawPond(c, x, by, t) {
+  [8, 14, 18, 20, 18, 14].forEach((w, j) => { const y = by - 6 + j; c.fillStyle = '#1a1c2c'; c.fillRect(x - w / 2 - 1, y, w + 2, 1); c.fillStyle = j === 0 ? '#29366f' : '#3b5dc9'; c.fillRect(x - w / 2, y, w, 1); });
+  const s = Math.floor(t * 2) % 6;
+  c.fillStyle = '#73eff7'; c.fillRect(x - 6 + s, by - 4, 2, 1); c.fillRect(x + 3 - (s % 4), by - 2, 3, 1);
+  c.fillStyle = '#ef7d57'; c.fillRect(Math.round(x + Math.sin(t * .7) * 6), by - 3, 2, 1);
+  c.fillStyle = '#f4f4f4'; c.fillRect(Math.round(x - Math.sin(t * .5 + 2) * 5), by - 1, 2, 1);
+}
+function drawWindmill(c, x, by, t) {
+  for (let j = 0; j < 20; j++) {
+    const w = Math.round(3 + j * .16), y = by - 20 + j;
+    c.fillStyle = '#1a1c2c'; c.fillRect(x - w - 1, y, 2 * w + 3, 1);
+    c.fillStyle = j % 5 === 4 ? '#8a4b38' : '#d6995e'; c.fillRect(x - w, y, 2 * w + 1, 1);
+  }
+  c.fillStyle = '#b13e53'; for (let j = 0; j < 5; j++) c.fillRect(x - j - 1, by - 25 + j, 2 * j + 3, 1);
+  c.fillStyle = '#1a1c2c'; c.fillRect(x - 1, by - 6, 3, 6); c.fillStyle = '#4e2a2a'; c.fillRect(x, by - 14, 1, 2);
+  const cy = by - 19, a = t * .9;
+  for (let k = 0; k < 4; k++) {
+    const an = a + k * Math.PI / 2, ca = Math.cos(an), sa = Math.sin(an);
+    for (let r = 1; r <= 11; r++) {
+      const px = x + ca * r, py = cy + sa * r;
+      c.fillStyle = '#4e2a2a'; c.fillRect(Math.round(px), Math.round(py), 1, 1);
+      if (r > 3) { c.fillStyle = '#f4f4f4'; c.fillRect(Math.round(px - sa * 1.4), Math.round(py + ca * 1.4), 1, 1); c.fillRect(Math.round(px - sa * 2.4), Math.round(py + ca * 2.4), 1, 1); }
+    }
+  }
+  c.fillStyle = '#ffcd75'; c.fillRect(x - 1, cy - 1, 2, 2);
+}
+function drawTower(c, x, by, t, night) {
+  stone(c, x - 5, by - 26, 10, 26); crenels(c, x - 5, by - 26, 10);
+  c.fillStyle = '#1a1c2c'; c.fillRect(x - 2, by - 6, 4, 6); c.fillRect(x - 1, by - 7, 2, 1);
+  c.fillStyle = night ? '#ffcd75' : '#1a1c2c'; c.fillRect(x - 1, by - 20, 2, 4);
+  if (night) LIGHTS.push([x, by - 18, 8, '#ffcd75']);
+  c.fillStyle = '#1a1c2c'; c.fillRect(x, by - 38, 1, 9);
+  const wv = Math.floor(t * 3) % 2;
+  c.fillStyle = '#b13e53'; c.fillRect(x + 1, by - 38, 5, 2); c.fillRect(x + 1 + wv, by - 36, 4, 1);
+}
+function drawCastle(c, x, by) {
+  stone(c, x - 10, by - 16, 20, 16); crenels(c, x - 10, by - 16, 20);
+  stone(c, x - 17, by - 23, 7, 23); crenels(c, x - 17, by - 23, 7);
+  stone(c, x + 10, by - 23, 7, 23); crenels(c, x + 10, by - 23, 7);
+  c.fillStyle = '#1a1c2c'; c.fillRect(x - 3, by - 8, 6, 8); c.fillRect(x - 2, by - 9, 4, 1);
+  c.fillRect(x - 14, by - 17, 1, 2); c.fillRect(x + 13, by - 17, 1, 2); c.fillRect(x - 6, by - 12, 1, 2); c.fillRect(x + 5, by - 12, 1, 2);
+  for (const fx of [x - 14, x + 13]) { c.fillStyle = '#1a1c2c'; c.fillRect(fx, by - 33, 1, 8); c.fillStyle = '#ffcd75'; c.fillRect(fx + 1, by - 33, 4, 2); c.fillRect(fx + 1, by - 31, 2, 1); }
+}
+function drawAnvil(c, x, by) {
+  c.fillStyle = '#1a1c2c'; c.fillRect(x - 6, by - 8, 12, 4); c.fillRect(x - 8, by - 7, 3, 2); c.fillRect(x - 3, by - 5, 6, 3); c.fillRect(x - 5, by - 3, 10, 3);
+  c.fillStyle = '#566c86'; c.fillRect(x - 5, by - 7, 10, 1); c.fillRect(x - 7, by - 6, 2, 1);
+  c.fillStyle = '#333c57'; c.fillRect(x - 5, by - 6, 10, 1); c.fillRect(x - 2, by - 5, 4, 3); c.fillRect(x - 4, by - 2, 8, 2);
+}
+function drawFire(c, x, by, t) {
+  c.fillStyle = '#566c86'; for (const dx of [-6, -4, 4, 6]) c.fillRect(x + dx - 1, by - 1, 2, 1);
+  c.fillStyle = '#4e2a2a'; c.fillRect(x - 4, by - 2, 8, 1); c.fillStyle = '#8a4b38'; c.fillRect(x - 3, by - 3, 6, 1);
+  const f = Math.floor(t * 9), hs = [3, 5, 7, 6, 4, 3];
+  for (let i = 0; i < 6; i++) {
+    const h = hs[(i + f) % 6] - (i === 0 || i === 5 ? 2 : 0), px = x - 3 + i;
+    if (h <= 0) continue;
+    c.fillStyle = '#b13e53'; c.fillRect(px, by - 3 - h, 1, h);
+    if (h > 1) { c.fillStyle = '#ef7d57'; c.fillRect(px, by - 3 - (h - 1), 1, h - 1); }
+    if (h > 3) { c.fillStyle = '#ffcd75'; c.fillRect(px, by - 3 - (h - 3), 1, h - 3); }
+  }
+  LIGHTS.push([x, by - 5, 22, '#ef7d57']);
+}
+const BUILD = [
+  { id: 'tent', name: "Traveler's Tent", cost: 20, perk: 'A roof, of sorts.', fx: .09, row: 'back', draw: (c, x, y) => spr(c, 'tent', x - 8, y - 11) },
+  { id: 'well', name: 'Stone Well', cost: 40, perk: 'Potions give +1 XP.', fx: .45, row: 'back', draw: (c, x, y) => spr(c, 'well', x - 6, y - 12) },
+  { id: 'lamps', name: 'Lamp Posts', cost: 50, perk: 'Light the path after dark.', row: 'lamp', draw: (c, x, y, t, n) => drawLamp(c, x, y, n) },
+  { id: 'garden', name: 'Crop Garden', cost: 60, perk: "Crops grow with today's forge minutes.", fx: .6, row: 'front', draw: (c, x, y, t, n, pv) => drawGarden(c, x, y, pv ? 3 : gardenStage()) },
+  { id: 'cat', name: 'Camp Cat', cost: 80, perk: 'Wanders. Judges. Purrs when tapped.', row: 'cat', draw: (c, x, y) => spr(c, 'cat_a', x - 4, y - 6) },
+  { id: 'pond', name: 'Koi Pond', cost: 90, perk: 'Something calm to watch on breaks.', fx: .83, row: 'front', draw: (c, x, y, t) => drawPond(c, x, y, t) },
+  { id: 'cottage', name: 'Cottage', cost: 120, perk: 'Windows glow after dark.', fx: .27, row: 'back', draw: (c, x, y, t, n) => { spr(c, n ? 'cottage_n' : 'cottage', x - 10, y - 18); if (n) LIGHTS.push([x - 5, y - 5, 7, '#ffcd75'], [x + 5, y - 5, 7, '#ffcd75']); } },
+  { id: 'stall', name: 'Market Stall', cost: 150, perk: '+1 gold on every quest.', fx: .6, row: 'back', draw: (c, x, y) => spr(c, 'stall', x - 8, y - 12) },
+  { id: 'windmill', name: 'Windmill', cost: 200, perk: '+10% XP from forge sessions.', fx: .75, row: 'back', draw: (c, x, y, t) => drawWindmill(c, x, y, t) },
+  { id: 'tower', name: 'Watchtower', cost: 280, perk: 'Critical rewards: 10% to 15%.', fx: .91, row: 'back', draw: (c, x, y, t, n) => drawTower(c, x, y, t, n) },
+  { id: 'castle', name: 'Hearth Keep', cost: 600, perk: 'Your keep on the hill. The goal.', row: 'far', draw: (c, x, y) => drawCastle(c, x, y) },
+];
+const BUILDING = Object.fromEntries(BUILD.map(b => [b.id, b]));
+function build(id) {
+  const b = BUILDING[id];
+  if (!b || has(id) || S.gold < b.cost) return SFX.err();
+  S.gold -= b.cost; S.built.push(id); bgKey = '';
+  SFX.build(); burst('spark', 20); hero.jump = 1;
+  toast(`Built: ${b.name}.`);
+  say(`A fine new ${b.name.replace("Traveler's ", '').toLowerCase()}!`);
+  checkAch(); commit();
+}
+// Draws the building alone, crops to its pixels, and picks the largest whole-number scale that fits the card.
+function preview(b) {
+  const k = 'pv_' + b.id;
+  if (ICON[k]) return ICON[k];
+  const c = document.createElement('canvas'); c.width = 44; c.height = 40;
+  const x = c.getContext('2d'); b.draw(x, 22, 38, 1.3, false, true); LIGHTS.length = 0;
+  const px = x.getImageData(0, 0, 44, 40).data;
+  let x0 = 44, y0 = 40, x1 = 0, y1 = 0;
+  for (let i = 0; i < 44 * 40; i++) if (px[i * 4 + 3]) { const u = i % 44, v = i / 44 | 0; x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); }
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, s = clamp(Math.min(Math.floor(84 / h), Math.floor(120 / w)), 1, 4);
+  const o = document.createElement('canvas'); o.width = w; o.height = h;
+  o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, w, h);
+  return ICON[k] = { src: o.toDataURL(), w: w * s, h: h * s };
+}
+
+/* ---------- Audio ---------- */
+let AC = null;
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
+  if (AC.state === 'suspended') AC.resume().catch(() => { });
+  return AC;
+}
+function note(freq, when, dur, type = 'square', vol = .05) {
+  const a = AC; if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(.0001, when); g.gain.exponentialRampToValueAtTime(vol, when + .01); g.gain.exponentialRampToValueAtTime(.0001, when + dur);
+  o.connect(g); g.connect(a.destination); o.start(when); o.stop(when + dur + .05);
+}
+function tone(f, t0, dur, type, vol) { if (!S.settings.sound) return; const a = ac(); if (a) note(f, a.currentTime + t0, dur, type, vol); }
+const seq = (fs, gap, dur, type, vol) => fs.forEach((f, i) => tone(f, i * gap, dur, type, vol));
+const SFX = {
+  blip: () => tone(660, 0, .05, 'square', .04),
+  coin: () => { tone(988, 0, .06); tone(1319, .06, .16); },
+  level: () => seq([523, 659, 784, 1047, 1319], .09, .22),
+  fanfare: () => seq([392, 523, 659, 784, 659, 784, 1047], .11, .16, 'square', .06),
+  chime: () => seq([1047, 1319, 1568], .12, .4, 'triangle', .07),
+  start: () => { tone(330, 0, .08); tone(494, .08, .14); },
+  err: () => { tone(160, 0, .12, 'sawtooth', .04); tone(120, .1, .18, 'sawtooth', .04); },
+  drink: () => seq([600, 700, 820, 940], .045, .06, 'sine', .07),
+  build: () => seq([196, 262, 330, 392, 523], .07, .12, 'square', .05),
+  ach: () => seq([784, 988, 1175, 1568], .08, .25, 'triangle', .07),
+  remind: () => { tone(880, 0, .12, 'triangle', .07); tone(1175, .15, .22, 'triangle', .07); },
+  meow() {
+    if (!S.settings.sound) return; const a = ac(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+    o.type = 'triangle'; o.frequency.setValueAtTime(620, t); o.frequency.linearRampToValueAtTime(940, t + .12); o.frequency.linearRampToValueAtTime(520, t + .38);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.08, t + .03); g.gain.exponentialRampToValueAtTime(.0001, t + .42);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .45);
+  },
+};
+// Forge music: Am-F-C-G arpeggio with a pentatonic melody, scheduled ahead on the worker tick.
+const mtof = m => 440 * 2 ** ((m - 69) / 12);
+const PROG = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], ARP = [0, 1, 2, 1, 0, 1, 2, 1];
+const MEL = [76, 0, 74, 0, 72, 0, 69, 0, 72, 0, 74, 76, 0, 0, 74, 0, 72, 0, 69, 0, 67, 0, 69, 0, 72, 0, 74, 0, 69, 0, 0, 0];
+const mus = { next: 0, step: 0 };
+const SPB = 60 / 84 / 2;
+function scheduleMusic() {
+  const a = AC; if (!a || !S.settings.music || a.state !== 'running') return;
+  if (mus.next < a.currentTime) mus.next = a.currentTime + .05;
+  while (mus.next < a.currentTime + .8) {
+    const s = mus.step, ch = PROG[Math.floor(s / 8) % 4], t = mus.next;
+    note(mtof(ch[ARP[s % 8]]), t, .2, 'triangle', .035);
+    if (s % 8 === 0) note(mtof(ch[0] - 12), t, SPB * 7, 'square', .014);
+    if (MEL[s % 32] && Math.floor(s / 32) % 2) note(mtof(MEL[s % 32]), t, .26, 'square', .016);
+    mus.next += SPB; mus.step++;
+  }
+}
+
+/* ---------- Scene ---------- */
+const cv = $('#scene'), cx = cv.getContext('2d');
+const H = 96, GY = 74, BACK = 80, PATH = 82, FEET = 88, FRONT = 95;
+let W = 200, SC = 2, T = 0, lastFrame = 0, bgKey = '';
+const bg = document.createElement('canvas'), bx = bg.getContext('2d');
+const LIGHTS = [], P = [];
+const hero = { x: 60, y: FEET, tx: 60, dir: 1, state: 'idle', wait: 2, jump: 0, ph: 0 };
+const cat = { x: 120, tx: 120, dir: -1, wait: 4 };
+const rain = rng(hash(dayKey()))() < .2;
+const sr = rng(7), STARS = Array.from({ length: 60 }, () => ({ x: sr(), y: Math.floor(sr() * 50), p: sr() * 6 }));
+const CLOUDS = Array.from({ length: rain ? 7 : 4 }, (_, i) => ({ x: sr() * 400, y: 6 + Math.floor(sr() * 22), w: 14 + Math.floor(sr() * 16), s: 1 + sr() * 1.5 }));
+const DROPS = Array.from({ length: 80 }, () => ({ x: sr() * 420, y: sr() * H }));
+const fireX = () => Math.round(.18 * W), anvilX = () => fireX() + 19;
+const mFar = x => Math.round(48 - 9 * Math.sin(x * .031 + 1.3) - 5 * Math.sin(x * .083 + .4) - 3 * Math.sin(x * .17));
+const mNear = x => Math.round(64 - 4 * Math.sin(x * .047 + 2) - 3 * Math.sin(x * .13 + 1));
+const SKY = [
+  [0, ['#0b0c17', '#121424', '#1a1c2c', '#222845', '#29366f']], [5, ['#0b0c17', '#121424', '#1a1c2c', '#222845', '#29366f']],
+  [6.5, ['#29366f', '#5d275d', '#b13e53', '#ef7d57', '#ffcd75']], [8, ['#3b5dc9', '#41a6f6', '#5ab8f5', '#73d8f7', '#b9eef7']],
+  [17, ['#3b5dc9', '#41a6f6', '#5ab8f5', '#73d8f7', '#b9eef7']], [18.7, ['#1f2350', '#5d275d', '#b13e53', '#ef7d57', '#ffcd75']],
+  [20.2, ['#0b0c17', '#121424', '#1a1c2c', '#222845', '#29366f']], [24, ['#0b0c17', '#121424', '#1a1c2c', '#222845', '#29366f']],
+];
+const hex2 = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, f) => '#' + hex2(a).map((v, i) => Math.round(v + (hex2(b)[i] - v) * f).toString(16).padStart(2, '0')).join('');
+function skyAt(h) { let i = 0; while (SKY[i + 1][0] <= h) i++; const [a, A] = SKY[i], [b, B] = SKY[i + 1], f = (h - a) / (b - a); return A.map((c, k) => mix(c, B[k], f)); }
+const darkAt = h => h < 5 || h >= 20.2 ? .55 : h < 8 ? .55 * (1 - (h - 5) / 3) : h < 17 ? 0 : .55 * Math.min(1, (h - 17) / 3.2);
+const hourNow = () => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; };
+
+function drawPine(c, x, by, h) {
+  c.fillStyle = '#4e2a2a'; c.fillRect(x, by - 2, 1, 2);
+  for (let j = 0; j < h; j++) {
+    const w = Math.floor(j * .3) + (j % 4), y = by - 2 - h + j;
+    c.fillStyle = '#257179'; c.fillRect(x - w, y, w + 1, 1);
+    c.fillStyle = '#38b764'; c.fillRect(x + 1, y, w, 1);
+  }
+}
+function drawBG() {
+  const hr = hourNow(), key = `${W}|${Math.floor(hr * 12)}|${has('castle')}`;
+  if (key === bgKey) return;
+  bgKey = key; bg.width = W; bg.height = H;
+  const c = bx, sky = skyAt(hr).map(col => rain ? mix(col, '#566c86', .45) : col), bh = Math.ceil(GY / 5);
+  sky.forEach((col, i) => {
+    c.fillStyle = col; c.fillRect(0, i * bh, W, bh);
+    if (i < 4) { c.fillStyle = sky[i + 1]; for (let y = i * bh + bh - 2; y < i * bh + bh; y++) for (let x = y % 2; x < W; x += 2) c.fillRect(x, y, 1, 1); }
+  });
+  if (!rain) {
+    if (hr >= 5.8 && hr <= 18.6) { const p = (hr - 5.8) / 12.8, sx = Math.round(W * (.06 + .88 * p)), sy = Math.round(58 - Math.sin(Math.PI * p) * 46); c.fillStyle = p < .12 || p > .88 ? '#ef7d57' : '#ffcd75'; disc(c, sx, sy, 5); c.fillStyle = '#fff3d6'; disc(c, sx - 1, sy - 1, 2); }
+    else { const p = ((hr - 18.6 + 24) % 24) / 11.2, mx = Math.round(W * (.06 + .88 * p)), my = Math.round(52 - Math.sin(Math.PI * p) * 40); c.fillStyle = '#f4f4f4'; disc(c, mx, my, 4); c.fillStyle = sky[Math.min(4, Math.floor(my / bh))]; disc(c, mx + 2, my - 1, 3); }
+  }
+  const far = mix(sky[4], '#566c86', .55);
+  for (let x = 0; x < W; x++) { const y = mFar(x); c.fillStyle = far; c.fillRect(x, y, 1, GY - y); if (y < 40) { c.fillStyle = mix(far, '#f4f4f4', .7); c.fillRect(x, y, 1, 2); } }
+  const cX = Math.round(.52 * W), castle = has('castle');
+  for (let x = 0; x < W; x++) {
+    let y = mNear(x);
+    if (castle && Math.abs(x - cX) < 30) y = Math.min(y, Math.round(58 + ((x - cX) / 30) ** 2 * 14));
+    c.fillStyle = '#257179'; c.fillRect(x, y, 1, GY - y); c.fillStyle = '#38b764'; c.fillRect(x, y, 1, 1);
+  }
+  if (castle) drawCastle(c, cX, 59);
+  c.fillStyle = '#38b764'; c.fillRect(0, GY, W, H - GY);
+  c.fillStyle = '#a7f070'; c.fillRect(0, GY, W, 1);
+  const r = rng(99);
+  c.fillStyle = '#257179'; for (let x = 0; x < W; x++) if (r() < .3) c.fillRect(x, GY + 2 + Math.floor(r() * 6), 1, 1);
+  c.fillStyle = '#b5794b'; c.fillRect(0, PATH, W, 8);
+  c.fillStyle = '#7d4a35'; c.fillRect(0, PATH, W, 1); c.fillRect(0, PATH + 7, W, 1);
+  c.fillStyle = '#d6995e'; for (let x = 0; x < W; x++) if (r() < .12) c.fillRect(x, PATH + 2 + Math.floor(r() * 4), 1, 1);
+  c.fillStyle = '#a7f070'; for (let x = 0; x < W; x++) if (r() < .14) c.fillRect(x, PATH + 10 + Math.floor(r() * 4), 1, 2);
+  let tx = 3; const tr = rng(5);
+  while (tx < W) { drawPine(c, tx, GY + 3, 8 + Math.floor(tr() * 10)); tx += 8 + Math.floor(tr() * 18); }
+}
+function drawCloud(c, k) {
+  const x = Math.round(k.x % (W + 60)) - 40;
+  c.fillStyle = rain ? '#94b0c2' : '#f4f4f4';
+  c.fillRect(x, k.y + 2, k.w, 3); c.fillRect(x + 3, k.y, Math.round(k.w * .5), 3); c.fillRect(x + Math.round(k.w * .45), k.y - 1, Math.round(k.w * .35), 3);
+  c.fillStyle = rain ? '#566c86' : '#94b0c2'; c.fillRect(x + 1, k.y + 5, k.w - 2, 1);
+}
+function drawHero(c) {
+  const h = hero, beat = Math.floor(T * 2.4) % 2;
+  let n = 'hero_a', dy = 0;
+  if (h.state === 'walk') n = Math.floor(T * 6) % 2 ? 'hero_b' : 'hero_a';
+  else if (h.state === 'sit') n = 'hero_sit';
+  else if (h.state === 'forge') n = beat ? 'hero_up' : 'hero_a';
+  else dy = Math.floor(T * 1.6) % 2;
+  if (h.jump > 0) { n = 'hero_up'; dy = -Math.round(Math.sin(h.jump * Math.PI) * 7); }
+  const s = SPR[n], x = Math.round(h.x - s.w / 2), y = h.y - s.h + dy + (n === 'hero_sit' ? 1 : 0);
+  spr(c, n, x, y, h.dir < 0);
+  if (h.state === 'forge' && !h.jump) {
+    c.fillStyle = '#8a4b38';
+    if (beat) { c.fillRect(x + 9, y, 1, 7); c.fillStyle = '#566c86'; c.fillRect(x + 7, y - 2, 5, 3); }
+    else { c.fillRect(x + 9, y + 7, 6, 1); c.fillStyle = '#566c86'; c.fillRect(x + 14, y + 5, 3, 5); }
+    if (h.ph === 1 && beat === 0) burst('spark', 4, anvilX() - 1, FEET - 8);
+    h.ph = beat;
+  }
+  if (thirsty) { const by = y - 8 + (Math.floor(T * 3) % 2); c.fillStyle = '#1a1c2c'; c.fillRect(h.x - 2, by - 1, 4, 9); c.fillStyle = '#73eff7'; c.fillRect(h.x - 1, by, 2, 4); c.fillRect(h.x - 1, by + 5, 2, 2); }
+  else if (h.state === 'meet') { const k = Math.floor(T * 2.5) % 4; c.fillStyle = '#f4f4f4'; for (let i = 0; i < k; i++) c.fillRect(Math.round(h.x) - 4 + i * 3, y - 4, 2, 2); }
+  else if (vigor() <= 2 && h.state !== 'sit') { c.fillStyle = '#73eff7'; c.fillRect(x + (h.dir > 0 ? 10 : -1), y + 3 + (Math.floor(T * 2) % 3), 1, 2); }
+  if (h.state === 'sit') { const zt = (T * .6) % 1, zx = Math.round(h.x + 4 + zt * 4), zy = Math.round(y - 2 - zt * 8); c.globalAlpha = 1 - zt; c.fillStyle = '#f4f4f4'; c.fillRect(zx, zy, 3, 1); c.fillRect(zx + 1, zy + 1, 1, 1); c.fillRect(zx, zy + 2, 3, 1); c.globalAlpha = 1; }
+}
+function burst(kind, n, x = hero.x, y = hero.y - 12) {
+  if (reduced) n = Math.min(n, 4);
+  for (let i = 0; i < n; i++) P.push({ x, y, vx: (Math.random() - .5) * (kind === 'spark' ? 60 : 44), vy: -Math.random() * (kind === 'heart' ? 14 : 55) - 15, life: 1, kind });
+}
+function update(dt) {
+  const h = hero, f = S.forge;
+  T += dt;
+  if (h.jump > 0) h.jump = Math.max(0, h.jump - dt * 1.8);
+  let act = null;
+  if (f.mode === 'focus' && !f.paused) { h.tx = anvilX() - 10; act = 'forge'; }
+  else if (f.mode === 'rest') { h.tx = fireX() + 11; act = 'sit'; }
+  else if (liveMeet()) { h.tx = Math.round(W * .5); act = 'meet'; }
+  const dx = h.tx - h.x;
+  if (Math.abs(dx) >= 1) { h.x += Math.sign(dx) * Math.min(Math.abs(dx), (vigor() <= 2 ? 9 : 16) * dt); h.dir = Math.sign(dx); h.state = 'walk'; }
+  else if (act) { h.state = act; h.dir = act === 'sit' ? -1 : 1; }
+  else {
+    if (h.state !== 'idle') { h.state = 'idle'; h.wait = 2 + Math.random() * 6; }
+    if ((h.wait -= dt) <= 0 && !reduced) h.tx = Math.round(W * (.06 + Math.random() * .88));
+  }
+  if (has('cat')) {
+    const d = cat.tx - cat.x;
+    if (Math.abs(d) < 1) { if ((cat.wait -= dt) <= 0 && !reduced) { cat.tx = Math.round(W * (.05 + Math.random() * .9)); cat.wait = 4 + Math.random() * 10; } }
+    else { cat.x += Math.sign(d) * Math.min(Math.abs(d), 7 * dt); cat.dir = Math.sign(d); }
+  }
+  if (Math.random() < dt * 2.5) P.push({ x: fireX() + (Math.random() * 4 - 2), y: FEET - 8, vx: (Math.random() - .5) * 8, vy: -18 - Math.random() * 10, life: .8, kind: 'ember' });
+  for (const p of P) {
+    p.vy += (p.kind === 'coin' ? 130 : p.kind === 'spark' ? 70 : p.kind === 'heart' ? -6 : 0) * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.life -= dt * (p.kind === 'spark' ? 1.8 : p.kind === 'ember' ? 1.2 : .9);
+    if (p.kind === 'coin' && p.y > FEET) { p.y = FEET; p.vy *= -.45; p.vx *= .6; }
+  }
+  for (let i = P.length - 1; i >= 0; i--) if (P[i].life <= 0) P.splice(i, 1);
+  for (const k of CLOUDS) k.x += k.s * dt * (reduced ? 0 : 1);
+  if (rain) for (const d of DROPS) { d.y += 150 * dt; d.x -= 30 * dt; if (d.y > H) { d.y -= H; d.x = Math.random() * (W + 30); } }
+}
+function render() {
+  LIGHTS.length = 0;
+  const c = cx, dk = Math.min(.62, darkAt(hourNow()) + (rain ? .12 : 0)), night = dk > .25;
+  drawBG(); c.drawImage(bg, 0, 0);
+  if (dk > .2 && !rain) {
+    c.fillStyle = '#f4f4f4';
+    for (const s of STARS) {
+      const x = Math.floor(s.x * W); if (s.y >= mFar(x) - 1) continue;
+      const tw = Math.sin(T * 1.5 + s.p); c.globalAlpha = Math.min(1, (dk - .2) * 3) * (.45 + .55 * Math.abs(tw));
+      c.fillRect(x, s.y, 1, 1); if (tw > .96) { c.fillRect(x - 1, s.y, 3, 1); c.fillRect(x, s.y - 1, 1, 3); }
+    }
+    c.globalAlpha = 1;
+  }
+  for (const k of CLOUDS) drawCloud(c, k);
+  for (const b of BUILD) if (b.row === 'back' && has(b.id)) b.draw(c, Math.round(b.fx * W), BACK, T, night);
+  if (has('lamps')) { drawLamp(c, Math.round(.36 * W), PATH, night); drawLamp(c, Math.round(.68 * W), PATH, night); }
+  drawAnvil(c, anvilX(), FEET);
+  drawHero(c);
+  for (const b of BUILD) if (b.row === 'front' && has(b.id)) b.draw(c, Math.round(b.fx * W), FRONT, T, night);
+  if (has('cat')) spr(c, Math.abs(cat.x - cat.tx) >= 1 && Math.floor(T * 5) % 2 ? 'cat_b' : 'cat_a', cat.x - 4, FRONT - 6, cat.dir < 0);
+  for (const p of P) {
+    c.globalAlpha = clamp(p.life * 1.5, 0, 1);
+    c.fillStyle = p.kind === 'coin' ? '#ffcd75' : p.kind === 'heart' ? '#b13e53' : p.kind === 'ember' ? (p.life > .5 ? '#ffcd75' : '#ef7d57') : (p.life > .6 ? '#ffcd75' : '#ef7d57');
+    const z = p.kind === 'coin' || p.kind === 'heart' ? 2 : 1;
+    c.fillRect(Math.round(p.x), Math.round(p.y), z, z);
+  }
+  c.globalAlpha = 1;
+  if (rain) { c.fillStyle = 'rgba(115,239,247,.55)'; for (const d of DROPS) { c.fillRect(Math.round(d.x), Math.round(d.y), 1, 2); c.fillRect(Math.round(d.x) - 1, Math.round(d.y) + 2, 1, 1); } }
+  if (dk > 0) { c.fillStyle = `rgba(10,12,32,${dk})`; c.fillRect(0, 0, W, H); }
+  drawFire(c, fireX(), FEET, T);
+  if (has('castle') && night) { const cX = Math.round(.52 * W); c.fillStyle = '#ffcd75'; for (const [x, y] of [[cX - 14, 42], [cX + 13, 42], [cX - 6, 47], [cX + 5, 47]]) { c.fillRect(x, y, 1, 2); LIGHTS.push([x, y + 1, 4, '#ffcd75']); } }
+  if (dk > 0) {
+    c.globalCompositeOperation = 'lighter';
+    const a = Math.min(1, dk / .45);
+    for (const [x, y, r, col] of LIGHTS) { c.fillStyle = col; c.globalAlpha = .07 * a; disc(c, x, y, r); c.globalAlpha = .09 * a; disc(c, x, y, Math.ceil(r * .6)); c.globalAlpha = .12 * a; disc(c, x, y, Math.ceil(r * .3)); }
+    c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+  }
+  placeBubble();
+}
+function frame(ts) {
+  requestAnimationFrame(frame);
+  if (ts - lastFrame < (reduced ? 250 : 50)) return;
+  const dt = Math.min(.25, (ts - lastFrame) / 1000); lastFrame = ts;
+  update(dt); render();
+}
+function fit() {
+  const wrap = $('#scene-wrap'), cw = wrap.clientWidth;
+  SC = cw >= 880 ? 3 : 2; W = Math.ceil(cw / SC);
+  cv.width = W; cv.height = H; cv.style.width = W * SC + 'px'; cv.style.height = H * SC + 'px'; wrap.style.height = H * SC + 'px';
+  cx.imageSmoothingEnabled = false; bgKey = '';
+  hero.x = clamp(hero.x, 4, W - 4); hero.tx = clamp(hero.tx, 4, W - 4); cat.x = clamp(cat.x, 4, W - 4); cat.tx = clamp(cat.tx, 4, W - 4);
+}
+
+/* ---------- Overlay text ---------- */
+let bubbleT = 0;
+function say(text, ms = 5200) { const b = $('#bubble'); b.textContent = text; b.hidden = false; clearTimeout(bubbleT); bubbleT = setTimeout(() => { b.hidden = true; }, ms); placeBubble(); }
+function placeBubble() {
+  const b = $('#bubble'); if (b.hidden) return;
+  const cw = $('#scene-wrap').clientWidth, half = b.offsetWidth / 2 + 6;
+  b.style.left = clamp(hero.x * SC, half, cw - half) + 'px';
+  b.style.top = (hero.y - 17 + (hero.jump ? -6 : 0)) * SC + 'px';
+}
+function fxText(txt, col) { const el = document.createElement('div'); el.className = 'fx ' + col; el.textContent = txt; el.style.left = hero.x * SC + 'px'; el.style.top = (hero.y - 26) * SC + 'px'; $('#fx').append(el); setTimeout(() => el.remove(), 1500); }
+function toast(msg, kind = '') {
+  const box = $('#toasts'), el = document.createElement('div');
+  el.className = 'toast ' + kind; el.textContent = msg; box.append(el);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => el.classList.add('out'), 3400); setTimeout(() => el.remove(), 3900);
+}
+function chatter() {
+  const h = new Date().getHours(), open = S.quests.filter(q => !q.done), lines = [], lm = liveMeet();
+  if (lm) return say(pick([`In a meeting: "${lm.t.slice(0, 36)}". Nod wisely.`, 'Shh. Meeting in progress.', 'Camera on? Posture check!']));
+  if (thirsty) lines.push('Potion time. Grab a glass of water?');
+  if (vigor() <= 2) lines.push('My arms ache. A short rest at camp?');
+  if (S.forge.mode === 'focus') lines.push('Clang. Clang. Stay with it.', 'The iron is glowing. Keep going.', 'No tabs. Only steel.');
+  else if (S.forge.mode === 'rest') lines.push('Look at something far away for a bit.', 'Ahh. The fire is warm.', 'Unclench your jaw. Drop your shoulders.');
+  else {
+    if (open.length) { const q = pick(open); lines.push(`"${q.t.slice(0, 42)}" won't slay itself.`, `${open.length} quest${open.length > 1 ? 's' : ''} on the board.`); }
+    else lines.push('The board is clear! Post a new quest?');
+    lines.push(h < 11 ? 'Mornings are for Boss quests.' : h >= 21 ? 'The stars are out. Wrap up soon?' : 'One focus session? 25 minutes, that is all.');
+    if (rain) lines.push('Rainy day. Good weather for deep work.');
+    const next = BUILD.find(b => !has(b.id));
+    if (next) lines.push(next.cost <= S.gold ? `We could afford the ${next.name.toLowerCase()}...` : `${next.cost - S.gold} more gold for the ${next.name.toLowerCase()}.`);
+    else lines.push('Look at this place. You built all of it.');
+  }
+  say(pick(lines));
+}
+
+/* ---------- Rendering the board ---------- */
+let thirsty = false, sample = null, oracleBusy = false;
+function renderHUD() {
+  const lv = level();
+  $('#h-name').textContent = S.name; $('#h-lv').textContent = 'LV ' + lv.l; $('#h-title').textContent = title(lv.l);
+  $('#h-xpbar').style.setProperty('--p', lv.into / lv.need); $('#h-xpbar').setAttribute('aria-valuenow', Math.round(lv.into / lv.need * 100));
+  $('#h-xp').textContent = `${lv.into} / ${lv.need} XP to level ${lv.l + 1}`;
+  $('#h-gold').textContent = S.gold; $('#m-gold').textContent = S.gold;
+  const st = streak(); $('#h-streak').textContent = st;
+  $('#h-streak').previousElementSibling.src = iconURL(st ? 'flame' : 'flame0');
+  const v = vigor(), hearts = Array.from({ length: 5 }, (_, i) => iconHTML(i < v ? 'heart' : 'heart0', 3)).join('');
+  $('#h-hearts').innerHTML = hearts; $('#c-hearts').innerHTML = hearts;
+  $('#b-sound').setAttribute('aria-pressed', S.settings.sound); $('#b-music').setAttribute('aria-pressed', S.settings.music);
+  $('#intro').hidden = S.seenIntro;
+}
+function renderClock() {
+  const d = new Date(), h = d.getHours();
+  const phase = h < 5 ? 'Deep night' : h < 8 ? 'Dawn' : h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : h < 20 ? 'Dusk' : 'Night';
+  $('#h-clock').textContent = `${pad(h)}:${pad(d.getMinutes())}`;
+  $('#h-phase').textContent = phase;
+  const date = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  $('#scene-tag').textContent = `${date} · ${phase}${rain ? ' · Rain' : ''}`;
+  $('#l-date').textContent = date;
+}
+function questLI(q) {
+  const now = Date.now(), live = q.cal && !q.done && now >= q.start && now < q.end, canSplit = sample && !q.done && !q.cal && q.size !== 's';
+  const sub = q.cal ? `${hm(q.start)}-${hm(q.end)}${live ? ' <b class="live">LIVE</b>' : ''}${q.done ? '' : ` · ${questReward(q).xp} XP when it ends`}` : q.from ? `from: ${esc(q.from)}` : '';
+  return `<li class="q" data-id="${q.id}" data-size="${q.cal ? 'c' : q.size}">
+    <button class="chk${q.done ? ' on' : ''}" data-act="done" aria-label="${q.done ? 'Undo' : 'Complete'}: ${esc(q.t)}"></button>
+    <div class="qt"><span>${esc(q.t)}</span>${sub ? `<small>${sub}</small>` : ''}</div>
+    <span class="size">${q.cal ? 'MEET' : QS[q.size].label}</span>
+    ${canSplit ? `<button class="mini split" data-act="split" title="Ask the Oracle to split this" aria-label="Split with the Oracle">*</button>` : ''}
+    <button class="mini" data-act="del" aria-label="Delete quest">x</button></li>`;
+}
+function renderQuests() {
+  const open = S.quests.filter(q => !q.done).sort((a, b) => (b.cal ? 1 : 0) - (a.cal ? 1 : 0) || (a.cal ? a.start - b.start : 0)), done = S.quests.filter(q => q.done);
+  $('#q-meta').textContent = `${open.length} open`;
+  $('#q-list').innerHTML = open.length ? open.map(questLI).join('') : `<li class="empty">The board is clear. Post a quest above${sample ? ', or type a big goal and ask the Oracle to split it' : ''}.</li>`;
+  $('#q-done-wrap').hidden = !done.length; $('#q-done-n').textContent = done.length;
+  $('#q-done').innerHTML = done.map(questLI).join('');
+  $('#q-oracle').hidden = !sample;
+  $('#q-oracle').disabled = oracleBusy;
+}
+function renderForge() {
+  const f = S.forge, run = f.mode !== 'idle';
+  $('#f-setup').hidden = run; $('#f-run').hidden = !run;
+  $('#f-pause').textContent = f.paused ? 'Resume' : 'Pause';
+  const m = run ? (f.paused ? 'paused' : f.mode) : 'idle';
+  $('#f-mode').textContent = m.toUpperCase(); $('#f-mode').dataset.m = m;
+  $('#f-face').dataset.m = run ? f.mode : 'idle';
+  $('#f-face').toggleAttribute('data-paused', f.paused && run);
+  for (const b of $('#f-focus-chips').children) b.setAttribute('aria-pressed', +b.dataset.v === S.settings.focus);
+  for (const b of $('#f-rest-chips').children) b.setAttribute('aria-pressed', +b.dataset.v === S.settings.rest);
+  const open = S.quests.filter(q => !q.done && !q.cal);
+  if (f.quest && !open.some(q => q.id === f.quest)) f.quest = '';
+  $('#f-quest').innerHTML = `<option value="">Free forging (no quest)</option>` + open.map(q => `<option value="${q.id}"${q.id === f.quest ? ' selected' : ''}>${esc(q.t.slice(0, 60))}</option>`).join('');
+  const qn = S.quests.find(q => q.id === f.quest);
+  $('#f-sub').textContent = !run ? 'Pick a quest, then strike while the iron is hot.' : f.paused ? 'Paused. The iron is cooling.' : f.mode === 'rest' ? 'Rest by the fire. Stretch, sip, look far away.' : qn ? `Forging: ${qn.t}` : 'Hammering away.';
+  const dn = f.done, card = $('#f-done');
+  card.hidden = !dn || run;
+  if (dn && !run) {
+    const q = dn.quest && S.quests.find(q => q.id === dn.quest && !q.done);
+    card.innerHTML = dn.kind === 'focus'
+      ? `<b>Session complete</b><p>${dn.min} minutes forged. Take a breather before the next one.</p>
+         ${q ? `<button class="btn lime wide" data-act="qdone" data-id="${q.id}">Mark done: ${esc(q.t.slice(0, 40))}</button>` : ''}
+         <div class="row"><button class="btn cyan big" data-act="rest">Rest ${S.settings.rest} min</button><button class="btn ghost" data-act="dismiss">Dismiss</button></div>`
+      : `<b>Rested</b><p>Vigor restored. The forge is warm.</p>
+         <div class="row"><button class="btn big" data-act="focus">Focus ${S.settings.focus} min</button><button class="btn ghost" data-act="dismiss">Dismiss</button></div>`;
+  }
+  const d = L();
+  $('#f-today').textContent = `${d.focus} min forged today`; $('#f-sessions').textContent = `${d.sessions} session${d.sessions === 1 ? '' : 's'}`;
+  renderForgeTime();
+}
+let segsBuilt = false;
+function renderForgeTime() {
+  const f = S.forge, run = f.mode !== 'idle', left = run ? forgeLeft() : S.settings.focus * MIN, s = Math.ceil(left / 1000);
+  const txt = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+  $('#f-time').textContent = txt;
+  if (!segsBuilt) { $('#f-segs').innerHTML = '<i></i>'.repeat(20); segsBuilt = true; }
+  const on = run ? Math.floor((1 - left / f.total) * 20) : 0;
+  [...$('#f-segs').children].forEach((el, i) => el.classList.toggle('on', i < on));
+  const chip = $('#h-timer'); chip.hidden = !run;
+  if (run) { chip.dataset.m = f.mode; $('#h-tmode').textContent = f.paused ? 'PAUSED' : f.mode.toUpperCase(); $('#h-tleft').textContent = txt; }
+  document.title = run && !f.paused ? `${txt} ${f.mode === 'focus' ? 'Focus' : 'Rest'} · Hearthforge` : 'Hearthforge';
+}
+function renderCamp() {
+  const v = vigor(), mins = Math.round((Date.now() - S.lastRestAt) / MIN);
+  $('#c-vigor').textContent = v === 5 ? 'Full vigor. Rest, drink, or stretch to keep it.' : v <= 2 ? `Low vigor. It has been ${mins} minutes since a real rest. Try a short break.` : `Last real rest ${mins} minutes ago.`;
+  const n = S.water.n;
+  $('#c-pot-n').textContent = `${n} / 8`;
+  $('#c-bottles').innerHTML = Array.from({ length: Math.max(8, n) }, (_, i) => iconHTML(i < n ? 'potion' : 'potion0', 3)).join('');
+  $('#c-bottles').classList.toggle('thirsty', thirsty);
+  const ago = Math.round((Date.now() - S.water.lastAt) / MIN), every = S.settings.potionEvery;
+  $('#c-pot').textContent = thirsty ? 'Potion reminder: time for a glass of water.' : n ? `Last potion ${ago} min ago.${every ? ` Next reminder in ${Math.max(0, every - ago)} min.` : ''}` : 'Each potion is one glass of water. Tap the bottles to drink.';
+  const cd = Math.ceil((20 * MIN - (Date.now() - S.stretchAt)) / MIN);
+  const sb = $('#c-stretch'); sb.disabled = cd > 0; sb.textContent = cd > 0 ? `Stretch again in ${cd} min` : 'Stretch break  +3 XP';
+  const t = dayKey(), y = dayKey(daysAgo(1));
+  $('#d-list').innerHTML = S.dailies.length ? S.dailies.map(d => {
+    const on = d.last === t, live = on || d.last === y ? d.streak : 0;
+    return `<li class="d" data-id="${d.id}"><button class="chk${on ? ' on' : ''}" data-act="daily" aria-label="${on ? 'Undo' : 'Check'}: ${esc(d.t)}"></button><div class="qt">${esc(d.t)}</div>
+      <span class="streak${live ? '' : ' cold'}" title="Streak (best ${d.best || 0})">${iconHTML(live ? 'flame' : 'flame0', 2)}${live}</span>
+      <button class="mini" data-act="ddel" aria-label="Delete daily">x</button></li>`;
+  }).join('') : '<li class="empty">No dailies yet. Add a small habit below.</li>';
+}
+function renderMarket() {
+  const next = BUILD.find(b => !has(b.id));
+  $('#m-grid').innerHTML = BUILD.map(b => {
+    const built = has(b.id), pv = preview(b);
+    return `<div class="card${built ? ' built' : b === next ? ' next' : ''}"><div class="pv"><img class="pix" src="${pv.src}" width="${pv.w}" height="${pv.h}" alt=""></div>
+      <b>${esc(b.name)}</b><small>${esc(b.perk)}</small>
+      <button class="btn ${built ? 'ghost' : 'gold'}" data-build="${b.id}"${built || S.gold < b.cost ? ' disabled' : ''}>${built ? 'Built' : `${iconHTML('coin', 2)} ${b.cost}`}</button></div>`;
+  }).join('');
+}
+function renderLog() {
+  const d = L();
+  $('#l-tiles').innerHTML = [[d.focus, 'forge min'], [d.quests, 'quests'], [d.xp, 'xp'], [d.potions, 'potions']].map(([v, k]) => `<div class="tile"><b>${v}</b><span>${k}</span></div>`).join('');
+  const days = Array.from({ length: 7 }, (_, i) => daysAgo(6 - i)), vals = days.map(x => S.log[dayKey(x)]?.focus || 0), max = Math.max(60, ...vals);
+  $('#l-chart').innerHTML = days.map((x, i) => {
+    const v = vals[i], hpx = v ? Math.max(6, Math.round(v / max * 96 / 6) * 6) : 2;
+    return `<div class="col${i === 6 ? ' today' : ''}"><span class="v">${v || ''}</span><i style="height:${hpx}px"></i><span class="d">${'SMTWTFS'[x.getDay()]}</span></div>`;
+  }).join('');
+  $('#l-ach-n').textContent = `${S.ach.length} / ${ACH.length}`;
+  $('#l-ach').innerHTML = ACH.map(([id, n, desc]) => { const got = S.ach.includes(id); return `<div class="badge${got ? '' : ' locked'}">${iconHTML(got ? 'medal' : 'medal0', 3)}<div><b>${n}</b><small>${desc}</small></div></div>`; }).join('');
+  $('#l-bard').hidden = !sample;
+  if (S.ballad?.day === dayKey() && !bardBusy) $('#l-ballad').textContent = S.ballad.text;
+  if (document.activeElement !== $('#s-name')) $('#s-name').value = S.name;
+  $('#s-pot').value = String(S.settings.potionEvery);
+}
+function syncNote() { $('#s-sync').textContent = remote ? 'Saved to your Claude account. Your village follows you to any device.' : 'Saved in this browser only.'; }
+function renderAll() { renderHUD(); renderQuests(); renderForge(); renderCamp(); renderMarket(); renderLog(); }
+
+/* ---------- Claude: Oracle and Bard ---------- */
+const HIDE = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'];
+function oracleNote(t) { const n = $('#oracle-note'); n.textContent = t; n.hidden = !t; }
+async function oracle(goal, replaceId) {
+  goal = goal.trim();
+  if (!sample || oracleBusy) return;
+  if (!goal) { oracleNote('Type a big goal in the box first, then ask the Oracle.'); return; }
+  oracleBusy = true; renderQuests(); oracleNote('The Oracle peers into the mist...');
+  const prompt = `You are the Quest Oracle in a cozy pixel-art productivity RPG. Break the player's goal into 3 to 6 concrete, actionable tasks they can check off, in a sensible order. Each task starts with a verb and is under 70 characters. Size each one: "s" (under 15 minutes), "m" (15 to 60 minutes), "l" (more than an hour). Reply with only a JSON array, for example [{"t":"Outline the three main sections","size":"s"}].\n\nGoal: ${goal.slice(0, 300)}`;
+  try {
+    const out = await sample.json(prompt, { modelTier: 'quick' });
+    const list = (Array.isArray(out) ? out : out?.tasks || out?.quests || []).filter(x => x && typeof x.t === 'string' && x.t.trim()).slice(0, 8);
+    if (!list.length) throw { code: 'empty_completion' };
+    const items = list.map(x => ({ id: uid(), t: x.t.trim().slice(0, 140), size: ['s', 'm', 'l'].includes(x.size) ? x.size : 's', at: Date.now(), from: goal.slice(0, 60) }));
+    const i = replaceId ? S.quests.findIndex(q => q.id === replaceId) : -1;
+    if (i >= 0) S.quests.splice(i, 1, ...items); else { S.quests.push(...items); $('#q-text').value = ''; }
+    unlock('seer'); SFX.ach(); oracleNote('');
+    say(`The Oracle has spoken: ${items.length} new quests.`);
+    oracleBusy = false; commit();
+  } catch (e) {
+    oracleBusy = false;
+    if (HIDE.includes(e?.code)) { sample = null; oracleNote(''); renderAll(); return; }
+    oracleNote(e?.code === 'rate_limited' ? 'The Oracle is resting. Try again in a minute.' : 'The mists are cloudy. Try again, or phrase the goal differently.');
+    renderQuests();
+  }
+}
+let bardBusy = false;
+async function bard() {
+  if (!sample || bardBusy) return;
+  bardBusy = true; const btn = $('#l-bard-btn'), out = $('#l-ballad'); btn.disabled = true;
+  const d = L(), lv = level().l, done = S.quests.filter(q => q.done).map(q => q.t).slice(0, 8);
+  const prompt = `You are a cheerful bard in a cozy retro pixel-art RPG called Hearthforge. Write a ballad of exactly 4 rhyming lines, each under 55 characters, about the hero ${S.name}'s real working day. Today's deeds: quests completed: ${done.length ? done.join('; ') : 'none yet'}. Minutes of focused work at the forge: ${d.focus}. Glasses of water drunk (potions): ${d.potions}. The hero is a level ${lv} ${title(lv)}. Keep it warm and a little funny; if little was done, make it gently encouraging. Reply with only the 4 lines.`;
+  out.textContent = 'The bard tunes a lute...';
+  try {
+    const { text } = await sample(prompt, { modelTier: 'quick', onText: ({ text }) => { out.textContent = text; } });
+    out.textContent = text.trim(); S.ballad = { day: dayKey(), text: text.trim() }; save();
+  } catch (e) {
+    if (HIDE.includes(e?.code)) { sample = null; renderAll(); }
+    else out.textContent = e?.code === 'rate_limited' ? 'The bard needs a breather. Try again in a minute.' : 'The bard lost the tune. Try again.';
+  } finally { bardBusy = false; btn.disabled = false; }
+}
+
+/* ---------- Notion Calendar: today's meetings become quests ---------- */
+const CAL_SERVER = 'Notion', CAL_TOOL = 'notion-calendar-list-events', CAL_CACHE = { staleTime: 2 * MIN, gcTime: 30 * MIN };
+let mcp = null, perms = null, calUnsub = null, calDay = '', calLast = null, calDirty = false, calBusy = false, liveSig = '';
+const meetWarned = new Set();
+function calInput() {
+  const a = new Date(); a.setHours(0, 0, 0, 0);
+  const b = new Date(a); b.setDate(b.getDate() + 1);
+  return { timeMin: a.toISOString(), timeMax: b.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' };
+}
+// Timed, confirmed, regular events from the calendars shown in Notion Calendar. All-day events (holidays) are skipped.
+function calParse(p) {
+  if (!p || !Array.isArray(p.accounts)) return null;
+  const evs = new Map();
+  for (const acc of p.accounts) for (const cal of acc.calendars || []) {
+    if (cal.isSelected === false || cal.isHidden) continue;
+    for (const e of cal.events || []) {
+      if (e.period?.type !== 'DATE_TIME' || e.eventStatus === 'cancelled' || e.isAutoBlock || (e.eventType && e.eventType !== 'default')) continue;
+      const start = Date.parse(e.period.start?.dateTime), end = Date.parse(e.period.end?.dateTime);
+      if (!(end > start)) continue;
+      const id = 'cal_' + String(e.eventId).replace(/[^\w-]/g, '').slice(0, 60);
+      evs.set(id, { id, t: String(e.summary || 'Untitled meeting').slice(0, 140), start, end });
+    }
+  }
+  return { evs: [...evs.values()], partial: !!p.errors?.length };
+}
+function mergeMeetings({ evs, partial }) {
+  const t = dayKey(), skip = S.calSkip?.day === t ? S.calSkip.ids : [], before = JSON.stringify(S.quests), ids = new Set(evs.map(e => e.id));
+  let added = 0;
+  if (!partial) S.quests = S.quests.filter(q => !q.cal || q.done || ids.has(q.id));
+  for (const e of evs) {
+    if (skip.includes(e.id)) continue;
+    const len = e.end - e.start, size = len <= 30 * MIN ? 's' : len <= 75 * MIN ? 'm' : 'l', q = S.quests.find(q => q.id === e.id);
+    if (q) { if (!q.done) Object.assign(q, { t: e.t, start: e.start, end: e.end, size }); }
+    else { S.quests.push({ id: e.id, t: e.t, size, at: Date.now(), cal: 1, day: t, start: e.start, end: e.end }); added++; }
+  }
+  if (JSON.stringify(S.quests) === before) return;
+  if (added) { toast(`${added} meeting${added > 1 ? 's' : ''} from Notion Calendar added to the board.`); SFX.blip(); }
+  commit();
+}
+function checkMeetings(now) {
+  for (const q of S.quests) {
+    if (!q.cal || q.done) continue;
+    if (now >= q.end) { toast(`Meeting done: ${q.t.slice(0, 48)}`); toggleQuest(q.id); }
+    else if (q.start > now && q.start - now <= 5 * MIN && !meetWarned.has(q.id)) {
+      meetWarned.add(q.id); SFX.remind();
+      const m = Math.max(1, Math.round((q.start - now) / MIN));
+      toast(`Meeting in ${m} min: ${q.t.slice(0, 48)}`); say(`Meeting in ${m} min. Grab a potion first?`);
+    }
+  }
+}
+function calNote(text, label) { $('#cal-status').textContent = text; if (label) $('#cal-btn').textContent = label; }
+function calOk(n, at) { calNote(`${n ? `${n} meeting${n > 1 ? 's' : ''} today` : 'No meetings today'} · synced ${hm(at || Date.now())}`, 'Sync'); }
+function calError(e) {
+  const c = e?.code;
+  if (['not_granted', 'capability_disabled', 'capability_removed'].includes(c)) { calUnsub?.(); calUnsub = null; $('#cal-bar').hidden = true; return; }
+  const ask = ['not_in_manifest', 'approval_required', 'consent_required'].includes(c);
+  calNote({
+    needs_reauth: 'Notion needs reconnecting in claude.ai Settings, Connectors.',
+    server_not_connected: 'Add the Notion connector in claude.ai Settings, Connectors.',
+    selection_required: 'You have more than one Notion connector. Pick one when Claude asks.',
+    not_in_manifest: 'Calendar access is not allowed for this page yet.',
+    approval_required: 'Calendar access needs your OK.',
+    consent_required: 'Calendar access needs your OK.',
+    blocked_by_policy: 'Your organization blocks calendar access here.',
+    server_unavailable: 'Notion Calendar did not answer. Try again in a minute.',
+    tool_error: 'Notion Calendar reported an error. Try again later.',
+  }[c] || 'Could not reach your calendar. Try again.', ask ? 'Connect' : 'Sync');
+}
+function calWatch() {
+  calUnsub?.(); calDay = dayKey();
+  calUnsub = mcp.watchTool(CAL_SERVER, CAL_TOOL, calInput(), ev => {
+    if (ev.type === 'error') return calError(ev.error);
+    const r = calParse(ev.result.payload);
+    if (!r) return calNote('Notion Calendar sent something unexpected. Try Sync.', 'Sync');
+    calLast = r; calDirty = true; calOk(r.evs.length, ev.result.cache?.storedAt);
+  }, { refetchInterval: 10 * MIN, cache: CAL_CACHE });
+}
+async function calSync() {
+  if (!mcp || calBusy) return;
+  const btn = $('#cal-btn');
+  if (btn.textContent === 'Permissions') {
+    await perms?.manage().catch(() => { });
+    if (await perms?.state('mcp:' + CAL_SERVER).catch(() => 'unavailable') === 'denied') return;
+  }
+  calBusy = true; btn.disabled = true; calNote('Checking your calendar...');
+  try {
+    const res = await mcp.callTool(CAL_SERVER, CAL_TOOL, calInput(), { cache: { ...CAL_CACHE, refresh: true } });
+    const r = calParse(res.payload);
+    if (!r) calNote('Notion Calendar sent something unexpected. Try again.', 'Sync');
+    else { calLast = r; calDirty = true; calOk(r.evs.length); if (!calUnsub || calDay !== dayKey()) calWatch(); }
+  } catch (e) { calError(e); }
+  finally { calBusy = false; btn.disabled = false; }
+}
+async function calInit(m, p) {
+  mcp = m; perms = p; $('#cal-bar').hidden = false;
+  const st = p ? await p.state('mcp:' + CAL_SERVER).catch(() => 'unavailable') : 'unavailable';
+  if (st === 'granted') { calNote('Checking your calendar...', 'Sync'); calWatch(); }
+  else if (st === 'denied') calNote('Calendar access is turned off for this page.', 'Permissions');
+  else calNote("Bring today's meetings from Notion Calendar onto the board.", 'Connect');
+}
+
+/* ---------- Events ---------- */
+function go(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.tab === tab));
+  document.querySelectorAll('.tabs button').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  try { localStorage.setItem('hearthforge.tab', tab); } catch { }
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { go(b.dataset.go); SFX.blip(); }));
+$('#h-timer').addEventListener('click', () => { go('forge'); $('#p-forge').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); });
+$('#intro-ok').addEventListener('click', () => { S.seenIntro = true; SFX.start(); say(`Hello! I'm ${S.name}. Let's grow this camp together.`); commit(); });
+$('#b-sound').addEventListener('click', () => { S.settings.sound = !S.settings.sound; SFX.blip(); commit(); });
+$('#b-music').addEventListener('click', () => { S.settings.music = !S.settings.music; const a = ac(); if (a) { mus.next = a.currentTime + .1; mus.step = 0; } commit(); });
+
+$('#q-form').addEventListener('submit', e => { e.preventDefault(); const size = $('input[name="q-size"]:checked').value; if (addQuest($('#q-text').value, size)) { $('#q-text').value = ''; oracleNote(''); } });
+$('#q-oracle').addEventListener('click', () => oracle($('#q-text').value));
+$('#cal-btn').addEventListener('click', calSync);
+for (const id of ['#q-list', '#q-done']) $(id).addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'), li = e.target.closest('.q'); if (!b || !li) return;
+  const q = S.quests.find(q => q.id === li.dataset.id);
+  if (b.dataset.act === 'done') toggleQuest(li.dataset.id);
+  else if (b.dataset.act === 'del') delQuest(li.dataset.id);
+  else if (b.dataset.act === 'split' && q) oracle(q.t, q.id);
+});
+
+const armed = {};
+function twoTap(btn, key, label, fn) {
+  if (armed[key] && Date.now() - armed[key] < 3500) { armed[key] = 0; fn(); return; }
+  armed[key] = Date.now(); const old = btn.textContent; btn.textContent = label;
+  setTimeout(() => { if (btn.textContent === label) btn.textContent = old; }, 3500);
+}
+$('#p-forge').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'focus' || a === 'rest') startForge(a);
+  else if (a === 'pause') togglePause();
+  else if (a === 'retreat') twoTap(b, 'retreat', 'Sure? Tap again', retreat);
+  else if (a === 'dismiss') { S.forge.done = null; commit(); }
+  else if (a === 'qdone') { S.forge.done = null; toggleQuest(b.dataset.id); }
+});
+$('#f-focus-chips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.settings.focus = +b.dataset.v; SFX.blip(); commit(); } });
+$('#f-rest-chips').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.settings.rest = +b.dataset.v; SFX.blip(); commit(); } });
+$('#f-quest').addEventListener('change', e => { S.forge.quest = e.target.value; save(); renderForge(); });
+
+$('#c-bottles').addEventListener('click', drink);
+$('#c-stretch').addEventListener('click', stretch);
+$('#d-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'), li = e.target.closest('.d'); if (!b || !li) return;
+  if (b.dataset.act === 'daily') toggleDaily(li.dataset.id);
+  else { S.dailies = S.dailies.filter(d => d.id !== li.dataset.id); commit(); }
+});
+$('#d-form').addEventListener('submit', e => { e.preventDefault(); const t = $('#d-text').value.trim().slice(0, 80); if (!t) return; S.dailies.push({ id: uid(), t, streak: 0, best: 0, last: '' }); $('#d-text').value = ''; SFX.blip(); commit(); });
+$('#m-grid').addEventListener('click', e => { const b = e.target.closest('[data-build]'); if (b) build(b.dataset.build); });
+$('#l-bard-btn').addEventListener('click', bard);
+$('#s-name').addEventListener('change', e => { S.name = e.target.value.trim().slice(0, 16) || 'Pip'; commit(); });
+$('#s-pot').addEventListener('change', e => { S.settings.potionEvery = +e.target.value; commit(); });
+$('#s-reset').addEventListener('click', e => twoTap(e.target, 'reset', 'Erase everything? Tap again', () => {
+  const keep = S.updatedAt; S = fresh(); S.updatedAt = keep; S.seenIntro = true; P.length = 0; bgKey = ''; commit(); toast('Save reset. A fresh camp awaits.');
+}));
+
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+  if (has('cat') && Math.abs(x - cat.x) < 7 && y > 84) { SFX.meow(); burst('heart', 5, cat.x, FRONT - 7); return; }
+  if (Math.abs(x - hero.x) < 10 && y > 66 && y < 92) { if (hero.state !== 'forge') hero.jump = 1; SFX.blip(); chatter(); }
+});
+document.addEventListener('pointerdown', () => ac(), { passive: true });
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input,select,textarea')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'n') { e.preventDefault(); go('quests'); $('#q-text').focus(); }
+  else if (k === 'f') { ac(); S.forge.mode === 'idle' ? startForge('focus') : togglePause(); }
+  else if (k === 'w') { ac(); drink(); }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.forge.mode !== 'idle' && !S.forge.paused) wake(true); });
+addEventListener('resize', () => { fit(); renderAll(); });
+
+/* ---------- Clock (worker tick keeps the timer honest in background tabs) ---------- */
+let lastSec = 0, reminded = 0, nextChat = Date.now() + 4 * MIN;
+function tick() {
+  scheduleMusic();
+  const now = Date.now(), sec = Math.floor(now / 1000);
+  if (sec === lastSec) return;
+  lastSec = sec;
+  if (rollover()) { persistLocal(); renderAll(); }
+  if (ready) checkForge();
+  if (ready && calDirty) { calDirty = false; mergeMeetings(calLast); }
+  if (ready) checkMeetings(now);
+  if (calUnsub && calDay !== dayKey()) calWatch();
+  renderForgeTime();
+  const every = S.settings.potionEvery;
+  thirsty = !!every && now - S.water.lastAt > every * MIN;
+  if (thirsty && ready && reminded !== S.water.lastAt) { reminded = S.water.lastAt; SFX.remind(); say('Potion time! Drink a glass of water.'); toast('Potion reminder: drink a glass of water.'); renderCamp(); }
+  if (sec % 15 === 0) {
+    renderClock(); renderHUD(); renderCamp();
+    const sig = liveMeet(now)?.id || '';
+    if (sig !== liveSig) { liveSig = sig; renderQuests(); }
+  }
+  if (now > nextChat) { nextChat = now + (5 + Math.random() * 4) * MIN; if ($('#bubble').hidden) chatter(); }
+}
+try {
+  const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),250)'], { type: 'text/javascript' })));
+  wk.onmessage = tick; wk.onerror = () => setInterval(tick, 250);
+} catch { setInterval(tick, 250); }
+
+/* ---------- Boot ---------- */
+if (Date.now() - (S.updatedAt || 0) > 3 * 60 * MIN) S.lastRestAt = Date.now();
+rollover(); persistLocal();
+paintIcons(); fit(); renderClock(); renderAll(); syncNote();
+try { const t = localStorage.getItem('hearthforge.tab'); if (t && $(`.panel[data-tab="${t}"]`)) go(t); } catch { }
+hero.x = hero.tx = fireX() + 14;
+requestAnimationFrame(frame);
+setTimeout(() => {
+  const h = new Date().getHours(), open = S.quests.filter(q => !q.done).length;
+  say(`${h < 5 ? 'Up late, huh' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'}! ${open ? `${open} quest${open > 1 ? 's' : ''} on the board.` : 'The board is clear.'}`);
+}, 1200);
+
+(async () => {
+  const cl = window.claude;
+  const [db, user, smp, m, p] = cl?.use ? await Promise.all([cl.use('db'), cl.use('user'), cl.use('sample'), cl.use('mcp'), cl.use('permissions')]).catch(() => []) : [];
+  if (smp) { sample = smp; renderAll(); }
+  if (m) calInit(m, p);
+  try {
+    const id = db && user ? await user.id() : null;
+    if (id) {
+      remote = db.doc('data/users/' + id + '/save');
+      let first = true;
+      remote.onSnapshot(snap => {
+        if (snap.metadata.hasPendingWrites) return;
+        const d = snap.exists ? snap.data() : null;
+        if (d && d.updatedAt > S.updatedAt) { try { S = migrate(JSON.parse(d.state)); rollover(); persistLocal(); bgKey = ''; if (calLast) calDirty = true; renderAll(); } catch { } }
+        else if (!d || d.updatedAt < S.updatedAt) { if (S.updatedAt) queueRemote(); }
+        if (first) { first = false; ready = true; }
+      }, () => { remote = null; ready = true; syncNote(); });
+      syncNote();
+    }
+  } catch { remote = null; }
+  if (!remote) ready = true;
+})();
+setTimeout(() => { ready = true; }, 5000);
+</script>
+</body>
+</html>
